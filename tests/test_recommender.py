@@ -64,6 +64,20 @@ def test_generate_recommendations_buy_pick_target_and_stop_loss(seeded_conn):
     assert top_pick["stop_loss"] == round(entry * 0.975, 2)
 
 
+def test_generate_recommendations_picks_include_streak_info(seeded_conn):
+    result = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term")
+    # SYM11's close rises every single day across all 11 seeded dates, so its
+    # streak should be a 10-day up run starting from the very first date.
+    top_buy_streak = result["buy"][0]["streak"]
+    assert top_buy_streak["direction"] == "up"
+    assert top_buy_streak["length"] == 10
+    assert top_buy_streak["start_date"] == DATES[0].isoformat()
+    # SYM00's close falls every single day, so its streak is a down run.
+    top_sell_streak = result["sell"][0]["streak"]
+    assert top_sell_streak["direction"] == "down"
+    assert top_sell_streak["length"] == 10
+
+
 def test_generate_recommendations_sell_pick_target_below_entry(seeded_conn):
     result = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term")
     top_sell = result["sell"][0]

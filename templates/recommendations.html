@@ -10,7 +10,7 @@
 <h3 class="buy">Buy <span class="badge badge-buy">{{ result.buy|length }}</span></h3>
 <div class="table-wrap">
 <table>
-<thead><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr></thead>
+<thead><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th><th>Streak</th></tr></thead>
 <tbody>
 {% for pick in result.buy %}
 <tr class="row-buy">
@@ -19,6 +19,7 @@
 <td>{{ pick.target }}</td>
 <td>{{ pick.stop_loss }}</td>
 <td>{{ pick.reason }}</td>
+<td><span class="badge badge-{{ 'buy' if pick.streak.direction == 'up' else 'sell' if pick.streak.direction == 'down' else 'still_open' }}">{{ pick.streak.label }}</span></td>
 </tr>
 {% endfor %}
 </tbody>
@@ -27,7 +28,7 @@
 <h3 class="sell">Sell <span class="badge badge-sell">{{ result.sell|length }}</span></h3>
 <div class="table-wrap">
 <table>
-<thead><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr></thead>
+<thead><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th><th>Streak</th></tr></thead>
 <tbody>
 {% for pick in result.sell %}
 <tr class="row-sell">
@@ -36,6 +37,7 @@
 <td>{{ pick.target }}</td>
 <td>{{ pick.stop_loss }}</td>
 <td>{{ pick.reason }}</td>
+<td><span class="badge badge-{{ 'buy' if pick.streak.direction == 'up' else 'sell' if pick.streak.direction == 'down' else 'still_open' }}">{{ pick.streak.label }}</span></td>
 </tr>
 {% endfor %}
 </tbody>

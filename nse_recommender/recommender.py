@@ -1,5 +1,7 @@
 import pandas as pd
 
+from nse_recommender import streaks
+
 HORIZONS = {
     "short_term": {"label": "Short-term (3 trading days)", "lookback_days": 3, "target_pct": 0.05, "stop_loss_pct": 0.025},
     "mid_term": {"label": "Mid-term (~2 weeks)", "lookback_days": 10, "target_pct": 0.10, "stop_loss_pct": 0.05},
@@ -42,7 +44,7 @@ def _levels(entry, side, target_pct, stop_loss_pct):
     return entry * (1 - target_pct), entry * (1 + stop_loss_pct)
 
 
-def _build_picks(rows, side, config):
+def _build_picks(conn, rows, side, config):
     picks = []
     for _, row in rows.iterrows():
         target, stop_loss = _levels(row["entry"], side, config["target_pct"], config["stop_loss_pct"])
@@ -54,6 +56,7 @@ def _build_picks(rows, side, config):
             "target": round(target, 2),
             "stop_loss": round(stop_loss, 2),
             "reason": f"{pct:+.1f}% over last {config['lookback_days']} trading days",
+            "streak": streaks.current_streak(conn, row["symbol"]),
         })
     return picks
 
@@ -69,8 +72,8 @@ def generate_recommendations(conn, symbols, horizon_key):
     return {
         "status": "ok",
         "label": config["label"],
-        "buy": _build_picks(top5, "buy", config),
-        "sell": _build_picks(bottom5, "sell", config),
+        "buy": _build_picks(conn, top5, "buy", config),
+        "sell": _build_picks(conn, bottom5, "sell", config),
     }
 
 
