@@ -1,23 +1,47 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Recommendations ({{ generated_date }})</h1>
+<h1>Recommendations <span class="muted">({{ generated_date }})</span></h1>
 {% for horizon_key, result in results.items() %}
 <h2>{{ result.label }}</h2>
+<div class="card">
 {% if result.status == "insufficient_data" %}
-<p>Need {{ result.need }} trading days of data, have {{ result.have }} &mdash; download more history first.</p>
+<p class="muted">Need {{ result.need }} trading days of data, have {{ result.have }} &mdash; download more history first.</p>
 {% else %}
-<h3>Buy</h3>
-<table border="1"><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr>
+<h3 class="buy">Buy <span class="badge badge-buy">{{ result.buy|length }}</span></h3>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr></thead>
+<tbody>
 {% for pick in result.buy %}
-<tr><td>{{ pick.symbol }}</td><td>{{ pick.entry }}</td><td>{{ pick.target }}</td><td>{{ pick.stop_loss }}</td><td>{{ pick.reason }}</td></tr>
+<tr>
+<td data-label="Symbol">{{ pick.symbol }}</td>
+<td data-label="Entry">{{ pick.entry }}</td>
+<td data-label="Target">{{ pick.target }}</td>
+<td data-label="Stop-loss">{{ pick.stop_loss }}</td>
+<td data-label="Reason">{{ pick.reason }}</td>
+</tr>
 {% endfor %}
+</tbody>
 </table>
-<h3>Sell</h3>
-<table border="1"><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr>
+</div>
+<h3 class="sell">Sell <span class="badge badge-sell">{{ result.sell|length }}</span></h3>
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr></thead>
+<tbody>
 {% for pick in result.sell %}
-<tr><td>{{ pick.symbol }}</td><td>{{ pick.entry }}</td><td>{{ pick.target }}</td><td>{{ pick.stop_loss }}</td><td>{{ pick.reason }}</td></tr>
+<tr>
+<td data-label="Symbol">{{ pick.symbol }}</td>
+<td data-label="Entry">{{ pick.entry }}</td>
+<td data-label="Target">{{ pick.target }}</td>
+<td data-label="Stop-loss">{{ pick.stop_loss }}</td>
+<td data-label="Reason">{{ pick.reason }}</td>
+</tr>
 {% endfor %}
+</tbody>
 </table>
+</div>
 {% endif %}
+</div>
 {% endfor %}
 {% endblock %}

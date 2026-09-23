@@ -1,14 +1,257 @@
 <!doctype html>
-<html>
-<head><title>NSE Recommender</title></head>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NSE Recommender</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --buy: #16a34a;
+    --buy-bg: #ecfdf3;
+    --sell: #dc2626;
+    --sell-bg: #fef2f2;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  nav {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 12px 16px;
+  }
+
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  nav a:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 16px;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+    margin: 28px 0 12px;
+  }
+
+  h3 {
+    font-size: 1rem;
+    margin: 16px 0 8px;
+  }
+
+  h3.buy { color: var(--buy); }
+  h3.sell { color: var(--sell); }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .flash {
+    max-width: 900px;
+    margin: 16px auto 0;
+    padding: 0 16px;
+  }
+
+  .flash ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .flash li {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 0.92rem;
+  }
+
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .button-row form { margin: 0; }
+
+  button {
+    appearance: none;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  button:hover { background: var(--primary-dark); }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+  }
+
+  thead th {
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr + tr td {
+    border-top: 1px solid var(--border);
+  }
+
+  tbody tr:hover { background: var(--bg); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .badge-buy { background: var(--buy-bg); color: var(--buy); }
+  .badge-sell { background: var(--sell-bg); color: var(--sell); }
+  .badge-target_hit { background: var(--buy-bg); color: var(--buy); }
+  .badge-stop_loss_hit { background: var(--sell-bg); color: var(--sell); }
+  .badge-still_open { background: var(--bg); color: var(--muted); }
+
+  .muted { color: var(--muted); font-size: 0.9rem; }
+
+  @media (max-width: 640px) {
+    nav { justify-content: space-between; padding: 10px; }
+    nav a { padding: 6px 8px; font-size: 0.88rem; }
+    main { padding: 16px 10px 40px; }
+    .card { padding: 12px; border-radius: 8px; }
+    button { width: 100%; }
+    .button-row { flex-direction: column; }
+  }
+
+  /* Below this width, wide data tables switch from a scrolling grid to one
+     card per row so every field stays fully visible with no horizontal
+     scrolling and nothing cut off at the edge. */
+  @media (max-width: 760px) {
+    table.stack thead { display: none; }
+    table.stack, table.stack tbody, table.stack tr, table.stack td {
+      display: block;
+      width: 100%;
+    }
+    table.stack { white-space: normal; }
+    table.stack tr {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    table.stack tr + tr { border-top: 1px solid var(--border); }
+    table.stack td {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 5px 0;
+      border: none !important;
+    }
+    table.stack td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+    .table-wrap:has(table.stack) { border: none; overflow-x: visible; }
+  }
+</style>
+</head>
 <body>
-<nav>
-  <a href="{{ url_for('index') }}">Downloader</a> |
-  <a href="{{ url_for('recommendations') }}">Recommendations</a> |
-  <a href="{{ url_for('past_picks') }}">Past Picks</a>
-</nav>
-<hr>
-{% with messages = get_flashed_messages() %}{% if messages %}<ul>{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}{% endwith %}
+<header>
+  <nav>
+    <a href="{{ url_for('index') }}">Downloader</a>
+    <a href="{{ url_for('recommendations') }}">Recommendations</a>
+    <a href="{{ url_for('past_picks') }}">Past Picks</a>
+  </nav>
+</header>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="flash">
+  <ul>{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% endwith %}
+<main>
 {% block content %}{% endblock %}
+</main>
 </body>
 </html>

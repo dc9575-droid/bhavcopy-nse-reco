@@ -1,14 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Past Picks</h1>
-<table border="1">
-<tr><th>Generated</th><th>Entry Date</th><th>Horizon</th><th>Side</th><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Status</th><th>As of</th><th>Current price</th></tr>
+<div class="card">
+<div class="table-wrap">
+<table class="stack">
+<thead><tr><th>Generated</th><th>Entry Date</th><th>Horizon</th><th>Side</th><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Status</th><th>As of</th><th>Current price</th></tr></thead>
+<tbody>
 {% for pick in picks %}
 <tr>
-<td>{{ pick.generated_date }}</td><td>{{ pick.entry_date }}</td><td>{{ pick.horizon }}</td><td>{{ pick.side }}</td><td>{{ pick.symbol }}</td>
-<td>{{ pick.entry }}</td><td>{{ pick.target }}</td><td>{{ pick.stop_loss }}</td>
-<td>{{ pick.status }}</td><td>{{ pick.as_of_date }}</td><td>{{ pick.current_price }}</td>
+<td data-label="Generated">{{ pick.generated_date }}</td>
+<td data-label="Entry Date">{{ pick.entry_date }}</td>
+<td data-label="Horizon">{{ pick.horizon }}</td>
+<td data-label="Side"><span class="badge badge-{{ pick.side }}">{{ pick.side }}</span></td>
+<td data-label="Symbol">{{ pick.symbol }}</td>
+<td data-label="Entry">{{ pick.entry }}</td>
+<td data-label="Target">{{ pick.target }}</td>
+<td data-label="Stop-loss">{{ pick.stop_loss }}</td>
+<td data-label="Status"><span class="badge badge-{{ pick.status }}">{{ pick.status.replace("_", " ") }}</span></td>
+<td data-label="As of">{{ pick.as_of_date }}</td>
+<td data-label="Current price">{{ pick.current_price }}</td>
 </tr>
 {% endfor %}
+</tbody>
 </table>
+</div>
+</div>
 {% endblock %}
