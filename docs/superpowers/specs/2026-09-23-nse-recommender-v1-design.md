@@ -105,3 +105,12 @@ NSE bhavcopy archive → downloader (parse) → SQLite (bhavcopy_prices)
 
 - Exact NSE bhavcopy URL pattern and holiday list source (carry forward the working logic already discovered in the prior attempt, since this part was hard-won and is not being redesigned).
 - Confirm target/stop-loss band percentages above are reasonable starting defaults (easy to tune later, not a structural decision).
+
+## Hosting (deferred decision)
+
+The user has existing cPanel hosting and asked whether V1 could run there. Decision: **build and run V1 entirely locally for now.** Two open risks make deploying to cPanel a later, separate step rather than a day-one requirement:
+
+1. Whether the cPanel plan offers "Setup Python App" (Passenger-based WSGI hosting) at all — not universal on shared cPanel.
+2. Whether NSE's WAF/anti-bot layer accepts requests from that specific server's IP — datacenter IPs are commonly blocked even with correct browser-like headers, and this can only be confirmed by testing from the actual account.
+
+Once V1 works locally, the next step is testing bhavcopy downloads from the cPanel account directly. If NSE responds there, the whole app can move to cPanel as-is. If not, the fallback is splitting the app: keep the downloader running locally (where NSE access is known to work) and host only the recommendation/Past Picks viewing pages on cPanel, reading from a SQLite file synced over periodically. This split is *not* being built into V1 speculatively — it's a fallback to implement only if the direct-hosting test fails.
