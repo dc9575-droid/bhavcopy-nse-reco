@@ -8,6 +8,7 @@
   <a href="{{ url_for('past_picks') }}">Past Picks</a>
 </nav>
 <hr>
+{% with messages = get_flashed_messages() %}{% if messages %}<ul>{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}{% endwith %}
 {% block content %}{% endblock %}
 </body>
 </html>

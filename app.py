@@ -1,12 +1,13 @@
 from datetime import date
 
-from flask import Flask, current_app, redirect, render_template, url_for
+from flask import Flask, current_app, flash, redirect, render_template, url_for
 
 from nse_recommender import calendar_nse, db, downloader, outcomes, recommender, status, universe
 
 
 def create_app(db_path=None, symbols=None):
     app = Flask(__name__)
+    app.secret_key = "nse-recommender-v1"
     resolved_db_path = db_path if db_path is not None else db.DB_PATH
     conn = db.get_connection(resolved_db_path)
     db.init_db(conn)
@@ -28,9 +29,14 @@ def create_app(db_path=None, symbols=None):
         conn = db.get_connection(current_app.config["DB_PATH"])
         try:
             dates = calendar_nse.range_for_label(label, date.today())
-            downloader.download_missing_days(conn, dates, set(current_app.config["SYMBOLS"]))
+            results = downloader.download_missing_days(conn, dates, set(current_app.config["SYMBOLS"]))
         finally:
             conn.close()
+        flash(
+            f"{len(results['success'])} downloaded, "
+            f"{len(results['no_data'])} no data, "
+            f"{len(results['failed'])} failed"
+        )
         return redirect(url_for("index"))
 
     @app.route("/recommendations")

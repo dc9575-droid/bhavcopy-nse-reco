@@ -72,3 +72,21 @@ def test_download_route_redirects_to_index(client, monkeypatch):
     monkeypatch.setattr(downloader, "fetch_bhavcopy_csv", always_no_data)
     resp = client.post("/download/yesterday")
     assert resp.status_code in (302, 303)
+
+
+def test_download_route_flashes_summary_message(client, monkeypatch):
+    from nse_recommender import calendar_nse
+
+    # Force a deterministic single candidate date regardless of what day the
+    # test happens to run on (weekends would otherwise make "yesterday"
+    # resolve to an empty list).
+    monkeypatch.setattr(calendar_nse, "range_for_label", lambda label, today: [date(2026, 1, 5)])
+
+    def always_no_data(d, session=None):
+        raise downloader.NoDataForDate("no data for test")
+
+    monkeypatch.setattr(downloader, "fetch_bhavcopy_csv", always_no_data)
+    resp = client.post("/download/yesterday", follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.data.decode()
+    assert "0 downloaded, 1 no data, 0 failed" in body
