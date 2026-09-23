@@ -9,15 +9,21 @@ tracks whether past picks hit their target or stop-loss.
     python3 -m venv .venv
     source .venv/bin/activate
     pip install -r requirements.txt
-    python scripts/fetch_universe.py   # one-time: populates data/nifty500_list.csv
+
+`data/nifty500_list.csv` is already bundled in the repo, so no extra setup
+step is needed to get started. `python scripts/fetch_universe.py` exists only
+to *refresh* that list later — it isn't required for initial setup, and it
+sends a non-browser-like User-Agent header that risks being blocked by
+NSE-family WAFs, so there's no need to run it on day one.
 
 ## Run
 
     python app.py
 
 Open http://localhost:5000 — start on the Downloader page and click at least
-"Last 6 Months" before checking Recommendations (short/mid-term need 10-40
-trading days of history; until then those horizons will say so explicitly).
+"Last 6 Months" before checking Recommendations (short/mid/long-term need
+4/11/41 trading days of history respectively; until then those horizons will
+say so explicitly).
 
 ## Test
 
