@@ -41,7 +41,7 @@
   }
 
   nav {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
     display: flex;
     flex-wrap: wrap;
@@ -64,7 +64,7 @@
   }
 
   main {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 20px 16px 60px;
   }
@@ -96,7 +96,7 @@
   }
 
   .flash {
-    max-width: 900px;
+    max-width: 1100px;
     margin: 16px auto 0;
     padding: 0 16px;
   }
@@ -143,18 +143,25 @@
     overflow-x: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    scrollbar-width: thin;
+  }
+
+  .table-wrap::-webkit-scrollbar { height: 8px; }
+  .table-wrap::-webkit-scrollbar-thumb {
+    background: var(--muted);
+    border-radius: 999px;
   }
 
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     white-space: nowrap;
   }
 
   th, td {
     text-align: left;
-    padding: 10px 12px;
+    padding: 7px 8px;
   }
 
   thead th {
@@ -197,41 +204,8 @@
     .button-row { flex-direction: column; }
   }
 
-  /* Wide data tables (Past Picks, Buy/Sell) render as one card per row,
-     always, rather than a wide grid — this avoids depending on guessing
-     the viewport width correctly, and guarantees every field is fully
-     visible with no horizontal scrolling and nothing cut off. */
-  table.stack thead { display: none; }
-  table.stack, table.stack tbody, table.stack tr, table.stack td {
-    display: block;
-    width: 100%;
-  }
-  table.stack { white-space: normal; }
-  table.stack tr {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 10px;
-  }
-  table.stack tr:last-child { margin-bottom: 0; }
-  table.stack td {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
-    padding: 5px 0;
-    border: none !important;
-  }
-  table.stack td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--muted);
-    font-size: 0.74rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    flex-shrink: 0;
-  }
-  .table-wrap:has(table.stack) { border: none; overflow-x: visible; }
+  tr.row-buy td:first-child { border-left: 3px solid var(--buy); }
+  tr.row-sell td:first-child { border-left: 3px solid var(--sell); }
 </style>
 </head>
 <body>
