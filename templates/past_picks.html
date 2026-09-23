@@ -1,6 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Past Picks</h1>
+
+<h2>Daily Results</h2>
+<p class="muted">A pick only resolves when its price actually hits target or stop-loss &mdash; there's no time limit. This just groups results at a cadence that matches each horizon: daily for short-term, weekly for mid-term, every 2 weeks for long-term.</p>
+
+{% for horizon_key, horizon_label, rows in [
+  ("short_term", "Short-term (daily)", daily.short_term),
+  ("mid_term", "Mid-term (weekly)", daily.mid_term),
+  ("long_term", "Long-term (every 2 weeks)", daily.long_term),
+] %}
+<h3>{{ horizon_label }}</h3>
+<div class="card">
+{% if rows %}
+<div class="table-wrap">
+<table>
+<thead><tr><th>Period</th><th>Target Hit</th><th>Stop-Loss Hit</th><th>Still Open</th><th>Total</th><th>Win Rate</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.period_label }}</td>
+<td><span class="badge badge-target_hit">{{ row.target_hit }}</span></td>
+<td><span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span></td>
+<td><span class="badge badge-still_open">{{ row.still_open }}</span></td>
+<td>{{ row.total }}</td>
+<td>{{ row.win_rate ~ "%" if row.win_rate is not none else "—" }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">No {{ horizon_label|lower }} picks yet.</p>
+{% endif %}
+</div>
+{% endfor %}
+
+<h2>All Picks</h2>
 <div class="card">
 <div class="table-wrap">
 <table>

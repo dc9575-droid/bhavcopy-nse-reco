@@ -67,9 +67,10 @@ def create_app(db_path=None, symbols=None):
         conn = db.get_connection(current_app.config["DB_PATH"])
         try:
             picks = outcomes.list_past_picks(conn)
+            daily = outcomes.daily_results(conn)
         finally:
             conn.close()
-        return render_template("past_picks.html", picks=picks)
+        return render_template("past_picks.html", picks=picks, daily=daily)
 
     return app
 
