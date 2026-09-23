@@ -77,4 +77,6 @@ def create_app(db_path=None, symbols=None):
 
 if __name__ == "__main__":
     flask_app = create_app()
-    flask_app.run(debug=True)
+    # host="0.0.0.0" binds all network interfaces (not just 127.0.0.1), so the
+    # app is also reachable via a LAN or Tailscale IP, e.g. http://<tailscale-ip>:5000/
+    flask_app.run(host="0.0.0.0", debug=True)
