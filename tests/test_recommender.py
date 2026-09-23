@@ -83,3 +83,28 @@ def test_generate_and_save_all_persists_ok_horizons_only(seeded_conn):
     rows = seeded_conn.execute("SELECT DISTINCT horizon FROM recommendations").fetchall()
     horizons_saved = {r["horizon"] for r in rows}
     assert horizons_saved == {"short_term", "mid_term"}
+
+
+def test_generate_recommendations_picks_include_entry_date(seeded_conn):
+    result = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term")
+    assert result["buy"][0]["entry_date"] == DATES[-1].isoformat()
+    assert result["sell"][0]["entry_date"] == DATES[-1].isoformat()
+
+
+def test_save_recommendations_persists_entry_date(seeded_conn):
+    recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
+    row = seeded_conn.execute(
+        "SELECT entry_date FROM recommendations WHERE horizon = 'short_term' LIMIT 1"
+    ).fetchone()
+    assert row["entry_date"] == DATES[-1].isoformat()
+
+
+def test_generate_and_save_all_is_idempotent_on_repeat_calls(seeded_conn):
+    # Regression test for C1: calling generate_and_save_all twice with the
+    # same generated_date must not duplicate rows (INSERT OR IGNORE + the
+    # UNIQUE constraint on (symbol, horizon, side, generated_date)).
+    recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
+    recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
+    count = seeded_conn.execute("SELECT COUNT(*) AS c FROM recommendations").fetchone()["c"]
+    # 2 horizons (short_term, mid_term) ok x 2 sides x 5 picks each = 20 rows total.
+    assert count == 20

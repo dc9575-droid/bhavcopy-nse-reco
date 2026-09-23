@@ -32,6 +32,7 @@ def compute_returns(conn, symbols, lookback_days):
     base = df[df["date"] == base_date].set_index("symbol")["close"]
     joined = latest.to_frame("entry").join(base.to_frame("base"), how="inner")
     joined["pct_return"] = (joined["entry"] - joined["base"]) / joined["base"]
+    joined["entry_date"] = latest_date
     return joined.reset_index().sort_values("pct_return", ascending=False).reset_index(drop=True)
 
 
@@ -49,6 +50,7 @@ def _build_picks(rows, side, config):
         picks.append({
             "symbol": row["symbol"],
             "entry": round(row["entry"], 2),
+            "entry_date": row["entry_date"],
             "target": round(target, 2),
             "stop_loss": round(stop_loss, 2),
             "reason": f"{pct:+.1f}% over last {config['lookback_days']} trading days",
@@ -78,9 +80,13 @@ def save_recommendations(conn, horizon_key, generated_date, result):
     for side in ("buy", "sell"):
         for pick in result[side]:
             conn.execute(
-                """INSERT INTO recommendations (symbol, horizon, side, generated_date, entry, target, stop_loss)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (pick["symbol"], horizon_key, side, generated_date, pick["entry"], pick["target"], pick["stop_loss"]),
+                """INSERT OR IGNORE INTO recommendations
+                   (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    pick["symbol"], horizon_key, side, generated_date, pick["entry_date"],
+                    pick["entry"], pick["target"], pick["stop_loss"],
+                ),
             )
     conn.commit()
 

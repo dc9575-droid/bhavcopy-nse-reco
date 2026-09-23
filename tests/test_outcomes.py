@@ -12,11 +12,12 @@ def _insert_price(conn, symbol, d, close):
     conn.commit()
 
 
-def _insert_recommendation(conn, symbol, side, generated_date, entry, target, stop_loss):
+def _insert_recommendation(conn, symbol, side, generated_date, entry, target, stop_loss, entry_date=None):
     conn.execute(
-        """INSERT INTO recommendations (symbol, horizon, side, generated_date, entry, target, stop_loss)
-           VALUES (?, 'short_term', ?, ?, ?, ?, ?)""",
-        (symbol, side, generated_date, entry, target, stop_loss),
+        """INSERT INTO recommendations
+           (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss)
+           VALUES (?, 'short_term', ?, ?, ?, ?, ?, ?)""",
+        (symbol, side, generated_date, entry_date or generated_date, entry, target, stop_loss),
     )
     conn.commit()
     return dict(conn.execute("SELECT * FROM recommendations WHERE symbol = ?", (symbol,)).fetchone())
@@ -73,6 +74,41 @@ def test_compute_outcome_sell_pick_target_is_price_falling():
     _insert_price(conn, "TCS", base + timedelta(days=1), 89)
     outcome = outcomes.compute_outcome(conn, rec)
     assert outcome["status"] == "target_hit"
+
+
+def test_compute_outcome_uses_entry_date_not_generated_date():
+    # Regression test for I4: generated_date is the wall-clock date the pick
+    # was created, but entry_date is the date the entry price actually came
+    # from (can be meaningfully earlier, e.g. weekends/late downloads). A bar
+    # strictly between entry_date and generated_date must still be scanned.
+    conn = get_connection(":memory:")
+    init_db(conn)
+    entry_date = date(2026, 1, 1)
+    generated_date = date(2026, 1, 5)  # generated several days after entry_date
+    rec = _insert_recommendation(
+        conn, "RELIANCE", "buy", generated_date.isoformat(), 100, 105, 95,
+        entry_date=entry_date.isoformat(),
+    )
+    # This bar falls between entry_date and generated_date; with the old bug
+    # (filtering on generated_date) it would be silently skipped.
+    _insert_price(conn, "RELIANCE", entry_date + timedelta(days=2), 106)
+    outcome = outcomes.compute_outcome(conn, rec)
+    assert outcome["status"] == "target_hit"
+    assert outcome["current_price"] == 106
+
+
+def test_compute_outcome_still_open_with_multiple_later_rows_never_hitting_either_band():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    base = date(2026, 1, 1)
+    rec = _insert_recommendation(conn, "RELIANCE", "buy", base.isoformat(), 100, 105, 95)
+    _insert_price(conn, "RELIANCE", base + timedelta(days=1), 101)
+    _insert_price(conn, "RELIANCE", base + timedelta(days=2), 99)
+    _insert_price(conn, "RELIANCE", base + timedelta(days=3), 103)
+    outcome = outcomes.compute_outcome(conn, rec)
+    assert outcome["status"] == "still_open"
+    assert outcome["as_of_date"] == (base + timedelta(days=3)).isoformat()
+    assert outcome["current_price"] == 103
 
 
 def test_list_past_picks_orders_most_recent_first():

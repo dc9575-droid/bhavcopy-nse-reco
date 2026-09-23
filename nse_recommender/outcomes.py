@@ -1,7 +1,7 @@
 def compute_outcome(conn, rec):
     cur = conn.execute(
         "SELECT date, close FROM bhavcopy_prices WHERE symbol = ? AND date > ? ORDER BY date ASC",
-        (rec["symbol"], rec["generated_date"]),
+        (rec["symbol"], rec["entry_date"]),
     )
     later_prices = cur.fetchall()
     for row in later_prices:
@@ -19,7 +19,7 @@ def compute_outcome(conn, rec):
     if later_prices:
         last = later_prices[-1]
         return {"status": "still_open", "as_of_date": last["date"], "current_price": last["close"]}
-    return {"status": "still_open", "as_of_date": rec["generated_date"], "current_price": rec["entry"]}
+    return {"status": "still_open", "as_of_date": rec["entry_date"], "current_price": rec["entry"]}
 
 
 def list_past_picks(conn):

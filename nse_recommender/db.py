@@ -26,11 +26,13 @@ CREATE TABLE IF NOT EXISTS recommendations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT NOT NULL,
     horizon TEXT NOT NULL,
-    side TEXT NOT NULL,
+    side TEXT NOT NULL CHECK (side IN ('buy', 'sell')),
     generated_date TEXT NOT NULL,
+    entry_date TEXT NOT NULL,
     entry REAL NOT NULL,
     target REAL NOT NULL,
-    stop_loss REAL NOT NULL
+    stop_loss REAL NOT NULL,
+    UNIQUE (symbol, horizon, side, generated_date)
 );
 """
 
