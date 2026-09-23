@@ -102,3 +102,51 @@ def test_store_bhavcopy_rows_is_idempotent():
     downloader.store_bhavcopy_rows(conn, rows)
     count = conn.execute("SELECT COUNT(*) AS c FROM bhavcopy_prices").fetchone()["c"]
     assert count == 2
+
+
+def test_download_missing_days_buckets_success_no_data_and_failed():
+    conn = get_connection(":memory:")
+    init_db(conn)
+
+    def fake_fetch(d, session=None):
+        if d == date(2026, 9, 18):
+            return SAMPLE_CSV.replace("2026-09-20", "2026-09-18")
+        if d == date(2026, 9, 19):
+            raise downloader.NoDataForDate("holiday")
+        raise RuntimeError("network down")
+
+    results = downloader.download_missing_days(
+        conn,
+        [date(2026, 9, 18), date(2026, 9, 19), date(2026, 9, 21)],
+        allowed_symbols={"RELIANCE", "TCS"},
+        fetch_fn=fake_fetch,
+    )
+    assert results["success"] == ["2026-09-18"]
+    assert results["no_data"] == ["2026-09-19"]
+    assert results["failed"] == ["2026-09-21"]
+
+
+def test_download_missing_days_skips_already_downloaded_dates():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    calls = []
+
+    def fake_fetch(d, session=None):
+        calls.append(d)
+        return SAMPLE_CSV
+
+    downloader.download_missing_days(conn, [date(2026, 9, 18)], {"RELIANCE"}, fetch_fn=fake_fetch)
+    downloader.download_missing_days(conn, [date(2026, 9, 18)], {"RELIANCE"}, fetch_fn=fake_fetch)
+    assert calls == [date(2026, 9, 18)]
+
+
+def test_download_missing_days_uses_module_level_fetch_when_not_overridden(monkeypatch):
+    conn = get_connection(":memory:")
+    init_db(conn)
+
+    def fake_fetch(d, session=None):
+        raise downloader.NoDataForDate("patched")
+
+    monkeypatch.setattr(downloader, "fetch_bhavcopy_csv", fake_fetch)
+    results = downloader.download_missing_days(conn, [date(2026, 9, 18)], {"RELIANCE"})
+    assert results["no_data"] == ["2026-09-18"]

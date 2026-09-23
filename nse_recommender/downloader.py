@@ -1,6 +1,7 @@
 import csv
 import io
 import zipfile
+from datetime import datetime
 
 import requests
 
@@ -72,3 +73,39 @@ def store_bhavcopy_rows(conn, rows):
         rows,
     )
     conn.commit()
+
+
+def _log_download(conn, date_str, status, message):
+    conn.execute(
+        "INSERT OR REPLACE INTO downloads_log (date, status, message, fetched_at) VALUES (?, ?, ?, ?)",
+        (date_str, status, message, datetime.utcnow().isoformat()),
+    )
+    conn.commit()
+
+
+def download_missing_days(conn, dates, allowed_symbols, fetch_fn=None):
+    fetch = fetch_fn if fetch_fn is not None else fetch_bhavcopy_csv
+    results = {"success": [], "no_data": [], "failed": []}
+    for d in dates:
+        date_str = d.isoformat()
+        existing = conn.execute(
+            "SELECT status FROM downloads_log WHERE date = ?", (date_str,)
+        ).fetchone()
+        if existing is not None and existing["status"] in ("success", "no_data"):
+            results[existing["status"]].append(date_str)
+            continue
+        try:
+            csv_text = fetch(d)
+        except NoDataForDate:
+            _log_download(conn, date_str, "no_data", None)
+            results["no_data"].append(date_str)
+            continue
+        except Exception as exc:
+            _log_download(conn, date_str, "failed", str(exc))
+            results["failed"].append(date_str)
+            continue
+        rows = parse_bhavcopy_csv(csv_text, allowed_symbols)
+        store_bhavcopy_rows(conn, rows)
+        _log_download(conn, date_str, "success", f"{len(rows)} symbols")
+        results["success"].append(date_str)
+    return results
