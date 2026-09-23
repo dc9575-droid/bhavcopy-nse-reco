@@ -197,42 +197,41 @@
     .button-row { flex-direction: column; }
   }
 
-  /* Below this width, wide data tables switch from a scrolling grid to one
-     card per row so every field stays fully visible with no horizontal
-     scrolling and nothing cut off at the edge. */
-  @media (max-width: 760px) {
-    table.stack thead { display: none; }
-    table.stack, table.stack tbody, table.stack tr, table.stack td {
-      display: block;
-      width: 100%;
-    }
-    table.stack { white-space: normal; }
-    table.stack tr {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-    }
-    table.stack tr + tr { border-top: 1px solid var(--border); }
-    table.stack td {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 12px;
-      padding: 5px 0;
-      border: none !important;
-    }
-    table.stack td::before {
-      content: attr(data-label);
-      font-weight: 600;
-      color: var(--muted);
-      font-size: 0.74rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      flex-shrink: 0;
-    }
-    .table-wrap:has(table.stack) { border: none; overflow-x: visible; }
+  /* Wide data tables (Past Picks, Buy/Sell) render as one card per row,
+     always, rather than a wide grid — this avoids depending on guessing
+     the viewport width correctly, and guarantees every field is fully
+     visible with no horizontal scrolling and nothing cut off. */
+  table.stack thead { display: none; }
+  table.stack, table.stack tbody, table.stack tr, table.stack td {
+    display: block;
+    width: 100%;
   }
+  table.stack { white-space: normal; }
+  table.stack tr {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  table.stack tr:last-child { margin-bottom: 0; }
+  table.stack td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 0;
+    border: none !important;
+  }
+  table.stack td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .table-wrap:has(table.stack) { border: none; overflow-x: visible; }
 </style>
 </head>
 <body>
