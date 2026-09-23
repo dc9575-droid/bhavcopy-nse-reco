@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+<head><title>NSE Recommender</title></head>
+<body>
+<nav>
+  <a href="{{ url_for('index') }}">Downloader</a> |
+  <a href="{{ url_for('recommendations') }}">Recommendations</a> |
+  <a href="{{ url_for('past_picks') }}">Past Picks</a>
+</nav>
+<hr>
+{% block content %}{% endblock %}
+</body>
+</html>

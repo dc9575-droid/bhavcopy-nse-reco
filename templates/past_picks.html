@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Past Picks</h1>
+<table border="1">
+<tr><th>Date</th><th>Horizon</th><th>Side</th><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Status</th><th>As of</th><th>Current price</th></tr>
+{% for pick in picks %}
+<tr>
+<td>{{ pick.generated_date }}</td><td>{{ pick.horizon }}</td><td>{{ pick.side }}</td><td>{{ pick.symbol }}</td>
+<td>{{ pick.entry }}</td><td>{{ pick.target }}</td><td>{{ pick.stop_loss }}</td>
+<td>{{ pick.status }}</td><td>{{ pick.as_of_date }}</td><td>{{ pick.current_price }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

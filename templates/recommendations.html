@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Recommendations ({{ generated_date }})</h1>
+{% for horizon_key, result in results.items() %}
+<h2>{{ result.label }}</h2>
+{% if result.status == "insufficient_data" %}
+<p>Need {{ result.need }} trading days of data, have {{ result.have }} &mdash; download more history first.</p>
+{% else %}
+<h3>Buy</h3>
+<table border="1"><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr>
+{% for pick in result.buy %}
+<tr><td>{{ pick.symbol }}</td><td>{{ pick.entry }}</td><td>{{ pick.target }}</td><td>{{ pick.stop_loss }}</td><td>{{ pick.reason }}</td></tr>
+{% endfor %}
+</table>
+<h3>Sell</h3>
+<table border="1"><tr><th>Symbol</th><th>Entry</th><th>Target</th><th>Stop-loss</th><th>Reason</th></tr>
+{% for pick in result.sell %}
+<tr><td>{{ pick.symbol }}</td><td>{{ pick.entry }}</td><td>{{ pick.target }}</td><td>{{ pick.stop_loss }}</td><td>{{ pick.reason }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+{% endfor %}
+{% endblock %}

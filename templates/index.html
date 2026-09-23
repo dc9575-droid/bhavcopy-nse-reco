@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>BhavCopy Downloader</h1>
+<form method="post" action="{{ url_for('download', label='yesterday') }}"><button>Yesterday</button></form>
+<form method="post" action="{{ url_for('download', label='this_month') }}"><button>This Month</button></form>
+<form method="post" action="{{ url_for('download', label='last_month') }}"><button>Last Month</button></form>
+<form method="post" action="{{ url_for('download', label='last_6_months') }}"><button>Last 6 Months</button></form>
+
+<h2>Coverage</h2>
+<p>Earliest date: {{ coverage.earliest_date or "none" }}</p>
+<p>Latest date: {{ coverage.latest_date or "none" }}</p>
+<p>Total trading days stored: {{ coverage.total_days }}</p>
+<table border="1">
+<tr><th>Range</th><th>Present</th><th>Expected</th></tr>
+{% for label, info in coverage.ranges.items() %}
+<tr><td>{{ label }}</td><td>{{ info.present }}</td><td>{{ info.expected }}</td></tr>
+{% endfor %}
+</table>
+{% endblock %}
