@@ -1,3 +1,14 @@
+import os
+
+# Must run before pandas/numpy are imported (via nse_recommender.recommender below):
+# on shared hosting with a low per-account process/thread limit, numpy's bundled
+# OpenBLAS spawning one thread per CPU core at import time can exceed the limit
+# and segfault. Forcing single-threaded BLAS avoids it; harmless everywhere else.
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+
 from datetime import date
 
 from flask import Flask, current_app, flash, redirect, render_template, url_for
