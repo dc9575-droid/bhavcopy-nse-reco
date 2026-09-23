@@ -33,8 +33,18 @@ def test_range_for_label_yesterday_on_a_weekday():
 
 def test_range_for_label_this_month_uses_month_boundaries():
     today = date(2024, 1, 15)
-    expected = calendar_nse.candidate_days(date(2024, 1, 1), date(2024, 1, 15))
+    expected = calendar_nse.candidate_days(date(2024, 1, 1), date(2024, 1, 14))
     assert calendar_nse.range_for_label("this_month", today) == expected
+
+
+def test_range_for_label_this_month_excludes_today():
+    today = date(2024, 1, 15)
+    assert date(2024, 1, 15) not in calendar_nse.range_for_label("this_month", today)
+
+
+def test_range_for_label_this_month_on_first_of_month_is_empty():
+    today = date(2024, 2, 1)
+    assert calendar_nse.range_for_label("this_month", today) == []
 
 
 def test_range_for_label_last_month_uses_previous_calendar_month():
@@ -45,8 +55,13 @@ def test_range_for_label_last_month_uses_previous_calendar_month():
 
 def test_range_for_label_last_6_months_spans_approximately_182_days_back():
     today = date(2024, 1, 15)
-    expected = calendar_nse.candidate_days(today - timedelta(days=182), today)
+    expected = calendar_nse.candidate_days(today - timedelta(days=182), today - timedelta(days=1))
     assert calendar_nse.range_for_label("last_6_months", today) == expected
+
+
+def test_range_for_label_last_6_months_excludes_today():
+    today = date(2024, 1, 15)
+    assert date(2024, 1, 15) not in calendar_nse.range_for_label("last_6_months", today)
 
 
 def test_range_for_label_unknown_label_raises():

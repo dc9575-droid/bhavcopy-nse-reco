@@ -38,6 +38,9 @@ def test_coverage_summary_reflects_downloaded_and_holiday_days():
     assert summary["latest_date"] == "2024-01-15"
     assert summary["total_days"] == 1
     assert summary["ranges"]["yesterday"] == {"expected": 1, "present": 1}
-    # this_month candidate weekdays: Jan 1-5, 8-12, 15, 16 = 12 weekdays;
-    # Jan 12 confirmed no_data (holiday) -> expected = 11; only Jan 15 present.
-    assert summary["ranges"]["this_month"] == {"expected": 11, "present": 1}
+    # this_month candidate weekdays exclude today (Jan 16) per the C2 fix —
+    # NSE may not have published yet, so today is never treated as "expected"
+    # until a later day's click confirms it one way or the other:
+    # Jan 1-5, 8-12, 15 = 11 weekdays; Jan 12 confirmed no_data (holiday) ->
+    # expected = 10; only Jan 15 present.
+    assert summary["ranges"]["this_month"] == {"expected": 10, "present": 1}
