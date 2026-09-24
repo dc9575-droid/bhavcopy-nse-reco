@@ -45,6 +45,9 @@ def test_channel_svg_renders_expected_structure():
     assert "<polygon" in svg  # the shaded channel band
     assert "<polyline" in svg  # centerline + close price lines
     assert "<circle" in svg  # marker on the latest price
+    assert f'Resistance {result["resistance"]}' in svg
+    assert f'Support {result["support"]}' in svg
+    assert f'>{result["current_price"]}<' in svg
 
     # The close-price polyline must have exactly one point per day in the
     # 20-day window (21 numbers separated by spaces -> 20 "x,y" pairs).
@@ -119,6 +122,10 @@ def test_next_day_projection_svg_renders_band_centerline_and_current_price():
     assert "<rect" in svg  # the projected support-to-resistance bar
     assert "<line" in svg  # the projected centerline tick
     assert "<circle" in svg  # today's current price marker on the same scale
+    assert f'S {result["next_support"]}' in svg
+    assert f'R {result["next_resistance"]}' in svg
+    assert f'Mid {result["next_centerline"]}' in svg
+    assert f'Now {result["current_price"]}' in svg
 
 
 def test_next_day_projection_svg_handles_a_flat_line_without_a_zero_division_error():
