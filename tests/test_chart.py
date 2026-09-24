@@ -95,3 +95,39 @@ def test_channel_svg_handles_a_flat_line_without_a_zero_division_error():
 
     assert svg is not None
     assert svg.startswith("<svg")
+
+
+def test_next_day_projection_svg_returns_none_when_channel_unavailable():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    _seed(conn, "EEE", [100, 101, 102])
+    result = channel.compute_channel(conn, "EEE")
+    assert chart.next_day_projection_svg(result) is None
+
+
+def test_next_day_projection_svg_renders_band_centerline_and_current_price():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    _seed(conn, "FFF", NOISY_UPTREND)
+    result = channel.compute_channel(conn, "FFF")
+
+    svg = chart.next_day_projection_svg(result)
+
+    assert svg is not None
+    assert svg.startswith("<svg")
+    assert svg.strip().endswith("</svg>")
+    assert "<rect" in svg  # the projected support-to-resistance bar
+    assert "<line" in svg  # the projected centerline tick
+    assert "<circle" in svg  # today's current price marker on the same scale
+
+
+def test_next_day_projection_svg_handles_a_flat_line_without_a_zero_division_error():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    _seed(conn, "GGG", [100] * 20)
+    result = channel.compute_channel(conn, "GGG")
+
+    svg = chart.next_day_projection_svg(result)
+
+    assert svg is not None
+    assert svg.startswith("<svg")

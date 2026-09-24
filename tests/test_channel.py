@@ -48,6 +48,12 @@ def test_compute_channel_fits_a_regression_line_and_bands():
     assert result["points"][-1]["date"] == date(2026, 9, 20).isoformat()
     assert result["points"][-1]["close"] == 120
     assert round(result["points"][-1]["fitted"], 2) == 119.06
+    # One-step-ahead linear extrapolation of the SAME fitted trend line --
+    # not a prediction of where price will actually go, just where the
+    # existing line/band would sit if extended by one more day.
+    assert result["next_centerline"] == 120.06
+    assert result["next_support"] == 118.11
+    assert result["next_resistance"] == 122.0
 
 
 def test_compute_channel_perfectly_linear_data_has_zero_width_band():

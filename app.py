@@ -93,6 +93,7 @@ def create_app(db_path=None, symbols=None):
                 "streak": streak,
                 "channel": chan,
                 "chart_svg": chart.channel_svg(chan),
+                "next_chart_svg": chart.next_day_projection_svg(chan),
                 "horizons": horizons,
             }
         return render_template("stock.html", symbol=symbol, result=result)

@@ -48,3 +48,46 @@ def channel_svg(result, width=380, height=160, padding=20):
         f'<circle cx="{last_x}" cy="{last_y}" r="3.5" fill="#2563eb" />'
         f'</svg>'
     )
+
+
+def next_day_projection_svg(result, width=380, height=70, padding=24):
+    """A separate, small horizontal chart: a bar spanning the one-step-ahead
+    projected support-to-resistance band, a dashed tick at the projected
+    centerline, and a dot for today's actual current price on that same
+    scale -- so it's visually clear whether today's price is already inside
+    or outside where the trend line projects tomorrow's band to sit. This is
+    a linear extrapolation of the existing trend, not a price prediction.
+    """
+    if not result.get("available"):
+        return None
+
+    support = result["next_support"]
+    resistance = result["next_resistance"]
+    centerline = result["next_centerline"]
+    current = result["current_price"]
+
+    x_min = min(support, resistance, centerline, current)
+    x_max = max(support, resistance, centerline, current)
+    x_range = (x_max - x_min) or 1
+    plot_w = width - 2 * padding
+
+    def x_of(value):
+        return padding + (value - x_min) / x_range * plot_w
+
+    x_support = x_of(support)
+    x_resistance = x_of(resistance)
+    x_centerline = x_of(centerline)
+    x_current = x_of(current)
+    bar_y = height / 2
+    bar_h = 16
+
+    return (
+        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" '
+        f'aria-label="Projected next-day channel">'
+        f'<rect x="{x_support:.1f}" y="{bar_y - bar_h / 2:.1f}" width="{max(x_resistance - x_support, 0.1):.1f}" '
+        f'height="{bar_h}" rx="4" fill="#2563eb" fill-opacity="0.12" stroke="#2563eb" stroke-width="1" />'
+        f'<line x1="{x_centerline:.1f}" y1="{bar_y - bar_h / 2 - 5:.1f}" x2="{x_centerline:.1f}" '
+        f'y2="{bar_y + bar_h / 2 + 5:.1f}" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="3,2" />'
+        f'<circle cx="{x_current:.1f}" cy="{bar_y:.1f}" r="4" fill="#111827" />'
+        f'</svg>'
+    )

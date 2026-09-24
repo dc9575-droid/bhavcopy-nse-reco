@@ -29,6 +29,10 @@
   {{ pick.chart_svg | safe }}
   <p class="muted">Support {{ pick.channel.support }} &middot; Resistance {{ pick.channel.resistance }} &middot; Centerline {{ pick.channel.centerline }}</p>
   <p class="muted">Currently at {{ pick.channel.position_pct }}% of this 20-day channel.</p>
+  <h3>Tomorrow's projected channel</h3>
+  <p class="muted">If this trend line continues (not a price prediction &mdash; the actual close could land anywhere, same as today's can break outside the current band):</p>
+  {{ pick.next_chart_svg | safe }}
+  <p class="muted">Projected support {{ pick.channel.next_support }} &middot; resistance {{ pick.channel.next_resistance }} &middot; centerline {{ pick.channel.next_centerline }}</p>
 </dialog>
 {% else %}
 &mdash;
@@ -61,6 +65,10 @@
   {{ pick.chart_svg | safe }}
   <p class="muted">Support {{ pick.channel.support }} &middot; Resistance {{ pick.channel.resistance }} &middot; Centerline {{ pick.channel.centerline }}</p>
   <p class="muted">Currently at {{ pick.channel.position_pct }}% of this 20-day channel.</p>
+  <h3>Tomorrow's projected channel</h3>
+  <p class="muted">If this trend line continues (not a price prediction &mdash; the actual close could land anywhere, same as today's can break outside the current band):</p>
+  {{ pick.next_chart_svg | safe }}
+  <p class="muted">Projected support {{ pick.channel.next_support }} &middot; resistance {{ pick.channel.next_resistance }} &middot; centerline {{ pick.channel.next_centerline }}</p>
 </dialog>
 {% else %}
 &mdash;

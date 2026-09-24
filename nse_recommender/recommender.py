@@ -61,6 +61,7 @@ def _build_picks(conn, rows, side, config):
         })
     for pick in picks:
         pick["chart_svg"] = chart.channel_svg(pick["channel"])
+        pick["next_chart_svg"] = chart.next_day_projection_svg(pick["channel"])
     return picks
 
 

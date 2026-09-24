@@ -44,6 +44,14 @@ def compute_channel(conn, symbol, lookback_days=LOOKBACK_DAYS):
     support = round(lower, 2)
     resistance = round(upper, 2)
 
+    # One-step-ahead linear extrapolation of this SAME fitted trend line --
+    # not a prediction of where the price will actually go (nothing can
+    # reliably do that), just where the existing line/band would sit if
+    # extended by exactly one more day. The real close could land anywhere,
+    # including outside this projected band, same as today's price can (and
+    # does, on a breakout) sit outside the current support/resistance.
+    next_centerline = intercept + slope * n
+
     return {
         "available": True,
         "lookback_days": lookback_days,
@@ -53,6 +61,9 @@ def compute_channel(conn, symbol, lookback_days=LOOKBACK_DAYS):
         "current_price": round(current_price, 2),
         "position_pct": round(position_pct, 1),
         "label": f"{round(position_pct)}% of {support}-{resistance}",
+        "next_centerline": round(next_centerline, 2),
+        "next_support": round(next_centerline - STD_MULTIPLIER * resid_std, 2),
+        "next_resistance": round(next_centerline + STD_MULTIPLIER * resid_std, 2),
         "resid_std": resid_std,
         "points": [
             {"date": d, "close": c, "fitted": f}
