@@ -1,7 +1,7 @@
 from nse_recommender.channel import STD_MULTIPLIER
 
 
-def channel_svg(result, width=380, height=170, padding=20):
+def channel_svg(result, width=380, height=170, padding=20, right_padding=48):
     """A small self-contained SVG: the channel band (shaded), the fitted
     centerline (dashed), the actual close price (solid), a dot marking the
     latest close, and text labels for resistance/support/current price so
@@ -28,7 +28,10 @@ def channel_svg(result, width=380, height=170, padding=20):
     bottom_margin = 22  # room for the support label row
     plot_top = top_margin
     plot_h = height - top_margin - bottom_margin
-    plot_w = width - 2 * padding
+    # Reserve extra room on the right (beyond the last plotted point) for the
+    # current-price label, which is right-anchored past the last x position --
+    # without this, a label like "865.25" gets clipped by the SVG's viewBox.
+    plot_w = width - padding - right_padding
     x_step = plot_w / max(n - 1, 1)
 
     def xy(i, value):
@@ -50,7 +53,7 @@ def channel_svg(result, width=380, height=170, padding=20):
     current_label_y = last_y - 10 if last_y > plot_top + 14 else last_y + 16
 
     return (
-        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" '
+        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" class="channel-chart" role="img" '
         f'aria-label="Price channel chart">'
         f'<text x="{padding}" y="14" font-size="11" fill="#dc2626" font-weight="600">Resistance {result["resistance"]}</text>'
         f'<text x="{padding}" y="{height - 6}" font-size="11" fill="#16a34a" font-weight="600">Support {result["support"]}</text>'
@@ -66,7 +69,7 @@ def channel_svg(result, width=380, height=170, padding=20):
     )
 
 
-def next_day_projection_svg(result, width=380, height=115, padding=30):
+def next_day_projection_svg(result, width=380, height=115, padding=44):
     """A separate, small horizontal chart: a bar spanning the one-step-ahead
     projected support-to-resistance band, a dashed tick at the projected
     centerline, and a dot for today's actual current price on that same
@@ -99,7 +102,7 @@ def next_day_projection_svg(result, width=380, height=115, padding=30):
     bar_h = 18
 
     return (
-        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" role="img" '
+        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" class="channel-chart" role="img" '
         f'aria-label="Projected next-day channel">'
         f'<text x="{x_support:.1f}" y="{bar_y - bar_h / 2 - 8:.1f}" font-size="10" fill="#16a34a" '
         f'font-weight="600" text-anchor="start">S {support}</text>'
