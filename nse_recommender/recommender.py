@@ -1,6 +1,6 @@
 import pandas as pd
 
-from nse_recommender import streaks
+from nse_recommender import channel, streaks
 
 HORIZONS = {
     "short_term": {"label": "Short-term (3 trading days)", "lookback_days": 3, "target_pct": 0.05, "stop_loss_pct": 0.025},
@@ -57,6 +57,7 @@ def _build_picks(conn, rows, side, config):
             "stop_loss": round(stop_loss, 2),
             "reason": f"{pct:+.1f}% over last {config['lookback_days']} trading days",
             "streak": streaks.current_streak(conn, row["symbol"]),
+            "channel": channel.compute_channel(conn, row["symbol"]),
         })
     return picks
 
@@ -92,6 +93,34 @@ def save_recommendations(conn, horizon_key, generated_date, result):
                 ),
             )
     conn.commit()
+
+
+def symbol_momentum(conn, symbol, horizon_key):
+    """Same return/reason math as a recommendation pick, but for one
+    arbitrary symbol regardless of whether it was ranked into the top/bottom
+    5 -- used by stock search, which shows info without implying a specific
+    buy/sell call."""
+    config = HORIZONS[horizon_key]
+    try:
+        df = compute_returns(conn, [symbol], config["lookback_days"])
+    except InsufficientData as exc:
+        return {"status": "insufficient_data", "have": exc.have, "need": exc.need, "label": config["label"]}
+    if df.empty:
+        return {
+            "status": "insufficient_data",
+            "have": 0,
+            "need": config["lookback_days"] + 1,
+            "label": config["label"],
+        }
+    row = df.iloc[0]
+    pct = row["pct_return"] * 100
+    return {
+        "status": "ok",
+        "label": config["label"],
+        "entry": round(row["entry"], 2),
+        "entry_date": row["entry_date"],
+        "reason": f"{pct:+.1f}% over last {config['lookback_days']} trading days",
+    }
 
 
 def generate_and_save_all(conn, symbols, generated_date):

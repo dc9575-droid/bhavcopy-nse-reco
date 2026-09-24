@@ -74,6 +74,29 @@ def test_download_route_redirects_to_index(client, monkeypatch):
     assert resp.status_code in (302, 303)
 
 
+def test_stock_search_with_no_symbol_shows_a_prompt(client):
+    resp = client.get("/stock")
+    assert resp.status_code == 200
+    assert b"Search for a symbol" in resp.data
+
+
+def test_stock_search_shows_streak_and_momentum_for_a_known_symbol(client):
+    resp = client.get("/stock?symbol=reliance")  # lowercase, must be normalized
+    assert resp.status_code == 200
+    body = resp.data.decode()
+    assert "RELIANCE" in body
+    assert "+4d since" in body  # RELIANCE's close rises every day in the fixture
+    # Only 5 days of history are seeded, far short of the channel's 20-day
+    # requirement, so it must degrade gracefully rather than error.
+    assert "Need 20" in body or "need" in body.lower()
+
+
+def test_stock_search_for_symbol_outside_the_universe_shows_a_message(client):
+    resp = client.get("/stock?symbol=NOTINUNIVERSE")
+    assert resp.status_code == 200
+    assert b"not in the bundled Nifty 500 list" in resp.data
+
+
 def test_download_route_flashes_summary_message(client, monkeypatch):
     from nse_recommender import calendar_nse
 

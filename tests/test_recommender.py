@@ -92,6 +92,25 @@ def test_generate_recommendations_long_term_reports_insufficient_data(seeded_con
     assert "label" in result
 
 
+def test_symbol_momentum_returns_ok_for_a_symbol_with_enough_history(seeded_conn):
+    result = recommender.symbol_momentum(seeded_conn, "SYM11", "short_term")
+    assert result["status"] == "ok"
+    assert result["reason"] == "+3.3% over last 3 trading days"
+    assert result["entry_date"] == DATES[-1].isoformat()
+
+
+def test_symbol_momentum_returns_insufficient_data_for_long_term(seeded_conn):
+    result = recommender.symbol_momentum(seeded_conn, "SYM11", "long_term")
+    assert result["status"] == "insufficient_data"
+    assert result["have"] == 11
+    assert result["need"] == 41
+
+
+def test_symbol_momentum_returns_insufficient_data_for_unknown_symbol(seeded_conn):
+    result = recommender.symbol_momentum(seeded_conn, "NOTREAL", "short_term")
+    assert result["status"] == "insufficient_data"
+
+
 def test_generate_and_save_all_persists_ok_horizons_only(seeded_conn):
     recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
     rows = seeded_conn.execute("SELECT DISTINCT horizon FROM recommendations").fetchall()

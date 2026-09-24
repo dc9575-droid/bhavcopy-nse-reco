@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Stock Search</h1>
+{% if not symbol %}
+<div class="card"><p class="muted">Search for a symbol above to see its streak, channel, and momentum across all horizons &mdash; the same details recommendations use, for any Nifty 500 stock.</p></div>
+{% elif not result.in_universe %}
+<div class="card"><p class="muted">&ldquo;{{ symbol }}&rdquo; is not in the bundled Nifty 500 list &mdash; only Nifty 500 symbols are tracked.</p></div>
+{% elif not result.has_data %}
+<div class="card"><p class="muted">No bhavcopy data downloaded yet for {{ symbol }}. Download some history from the Downloader page first.</p></div>
+{% else %}
+<h2>{{ symbol }}</h2>
+<div class="card">
+<p class="muted">Current price: {{ result.streak.current_price }} as of {{ result.streak.current_date }}</p>
+<p>Streak:
+<span class="badge badge-{{ 'buy' if result.streak.direction == 'up' else 'sell' if result.streak.direction == 'down' else 'still_open' }}">{{ result.streak.label }}</span>
+</p>
+<p>Channel:
+{% if result.channel.available %}
+<span class="badge badge-still_open">{{ result.channel.label }}</span>
+{% else %}
+<span class="muted">Need {{ result.channel.need }} trading days of data, have {{ result.channel.have }}</span>
+{% endif %}
+</p>
+</div>
+
+<h2>Momentum by horizon</h2>
+<div class="card">
+<div class="table-wrap">
+<table>
+<thead><tr><th>Horizon</th><th>Return</th><th>Entry</th><th>Entry date</th></tr></thead>
+<tbody>
+{% for horizon_key, h in result.horizons.items() %}
+<tr>
+<td>{{ h.label }}</td>
+{% if h.status == "ok" %}
+<td>{{ h.reason }}</td>
+<td>{{ h.entry }}</td>
+<td>{{ h.entry_date }}</td>
+{% else %}
+<td colspan="3" class="muted">Need {{ h.need }} trading days of data, have {{ h.have }}</td>
+{% endif %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% endif %}
+{% endblock %}

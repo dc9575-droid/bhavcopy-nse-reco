@@ -11,9 +11,9 @@ os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 from datetime import date
 
-from flask import Flask, current_app, flash, redirect, render_template, url_for
+from flask import Flask, current_app, flash, redirect, render_template, request, url_for
 
-from nse_recommender import calendar_nse, db, downloader, outcomes, recommender, status, universe
+from nse_recommender import calendar_nse, channel, db, downloader, outcomes, recommender, status, streaks, universe
 
 
 def create_app(db_path=None, symbols=None):
@@ -71,6 +71,30 @@ def create_app(db_path=None, symbols=None):
         finally:
             conn.close()
         return render_template("past_picks.html", picks=picks, daily=daily)
+
+    @app.route("/stock")
+    def stock():
+        symbol = request.args.get("symbol", "").strip().upper()
+        result = None
+        if symbol:
+            conn = db.get_connection(current_app.config["DB_PATH"])
+            try:
+                streak = streaks.current_streak(conn, symbol)
+                chan = channel.compute_channel(conn, symbol)
+                horizons = {
+                    horizon_key: recommender.symbol_momentum(conn, symbol, horizon_key)
+                    for horizon_key in recommender.HORIZONS
+                }
+            finally:
+                conn.close()
+            result = {
+                "in_universe": symbol in current_app.config["SYMBOLS"],
+                "has_data": streak["current_price"] is not None,
+                "streak": streak,
+                "channel": chan,
+                "horizons": horizons,
+            }
+        return render_template("stock.html", symbol=symbol, result=result)
 
     return app
 
