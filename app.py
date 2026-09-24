@@ -70,7 +70,25 @@ def create_app(db_path=None, symbols=None):
             daily = outcomes.daily_results(conn)
         finally:
             conn.close()
-        return render_template("past_picks.html", picks=picks, daily=daily)
+
+        filter_horizon = request.args.get("horizon") or None
+        filter_period = request.args.get("period") or None
+        filter_status = request.args.get("status") or None
+        filter_active = bool(filter_horizon or filter_period or filter_status)
+        filtered_picks = outcomes.filter_picks(
+            picks, horizon=filter_horizon, period=filter_period, status=filter_status
+        )
+
+        return render_template(
+            "past_picks.html",
+            picks=filtered_picks,
+            all_picks_count=len(picks),
+            daily=daily,
+            filter_active=filter_active,
+            filter_horizon=filter_horizon,
+            filter_period=filter_period,
+            filter_status=filter_status,
+        )
 
     @app.route("/stock")
     def stock():

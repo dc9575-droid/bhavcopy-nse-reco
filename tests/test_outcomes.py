@@ -214,3 +214,35 @@ def test_daily_results_sorts_periods_most_recent_first():
     results = outcomes.daily_results(conn)
     periods = [row["period_start"] for row in results["short_term"]]
     assert periods == ["2026-09-23", "2026-09-01"]
+
+
+_SAMPLE_PICKS = [
+    {"symbol": "AAA", "horizon": "short_term", "generated_date": "2026-09-23", "status": "target_hit"},
+    {"symbol": "BBB", "horizon": "short_term", "generated_date": "2026-09-23", "status": "stop_loss_hit"},
+    {"symbol": "CCC", "horizon": "short_term", "generated_date": "2026-09-22", "status": "stop_loss_hit"},
+    {"symbol": "DDD", "horizon": "mid_term", "generated_date": "2026-09-23", "status": "still_open"},
+]
+
+
+def test_filter_picks_with_no_filters_returns_everything():
+    assert outcomes.filter_picks(_SAMPLE_PICKS) == _SAMPLE_PICKS
+
+
+def test_filter_picks_by_status_only():
+    result = outcomes.filter_picks(_SAMPLE_PICKS, status="stop_loss_hit")
+    assert [p["symbol"] for p in result] == ["BBB", "CCC"]
+
+
+def test_filter_picks_by_horizon_only():
+    result = outcomes.filter_picks(_SAMPLE_PICKS, horizon="mid_term")
+    assert [p["symbol"] for p in result] == ["DDD"]
+
+
+def test_filter_picks_by_horizon_period_and_status_combined():
+    # BBB and CCC are both short_term/stop_loss_hit, but only BBB's
+    # generated_date (2026-09-23) falls in the 2026-09-23 short-term period
+    # (short-term periods are per-day, so CCC's 09-22 pick is excluded).
+    result = outcomes.filter_picks(
+        _SAMPLE_PICKS, horizon="short_term", period="2026-09-23", status="stop_loss_hit"
+    )
+    assert [p["symbol"] for p in result] == ["BBB"]

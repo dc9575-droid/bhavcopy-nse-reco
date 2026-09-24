@@ -20,10 +20,34 @@
 {% for row in rows %}
 <tr>
 <td>{{ row.period_label }}</td>
-<td><span class="badge badge-target_hit">{{ row.target_hit }}</span></td>
-<td><span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span></td>
-<td><span class="badge badge-still_open">{{ row.still_open }}</span></td>
-<td>{{ row.total }}</td>
+<td>
+{% if row.target_hit > 0 %}
+<a class="badge badge-target_hit" href="{{ url_for('past_picks', horizon=horizon_key, period=row.period_start, status='target_hit') }}#all-picks">{{ row.target_hit }}</a>
+{% else %}
+<span class="badge badge-target_hit">{{ row.target_hit }}</span>
+{% endif %}
+</td>
+<td>
+{% if row.stop_loss_hit > 0 %}
+<a class="badge badge-stop_loss_hit" href="{{ url_for('past_picks', horizon=horizon_key, period=row.period_start, status='stop_loss_hit') }}#all-picks">{{ row.stop_loss_hit }}</a>
+{% else %}
+<span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span>
+{% endif %}
+</td>
+<td>
+{% if row.still_open > 0 %}
+<a class="badge badge-still_open" href="{{ url_for('past_picks', horizon=horizon_key, period=row.period_start, status='still_open') }}#all-picks">{{ row.still_open }}</a>
+{% else %}
+<span class="badge badge-still_open">{{ row.still_open }}</span>
+{% endif %}
+</td>
+<td>
+{% if row.total > 0 %}
+<a href="{{ url_for('past_picks', horizon=horizon_key, period=row.period_start) }}#all-picks">{{ row.total }}</a>
+{% else %}
+{{ row.total }}
+{% endif %}
+</td>
 <td>{{ row.win_rate ~ "%" if row.win_rate is not none else "—" }}</td>
 </tr>
 {% endfor %}
@@ -36,7 +60,17 @@
 </div>
 {% endfor %}
 
-<h2>All Picks</h2>
+<h2 id="all-picks">All Picks</h2>
+{% if filter_active %}
+<div class="card filter-banner">
+<span class="muted">Showing {{ picks|length }} of {{ all_picks_count }} picks
+{%- if filter_horizon %} &middot; horizon: <strong>{{ filter_horizon.replace("_", " ") }}</strong>{% endif -%}
+{%- if filter_period %} &middot; period: <strong>{{ filter_period }}</strong>{% endif -%}
+{%- if filter_status %} &middot; status: <strong>{{ filter_status.replace("_", " ") }}</strong>{% endif -%}
+</span>
+<a href="{{ url_for('past_picks') }}">Clear filter</a>
+</div>
+{% endif %}
 <div class="card">
 <div class="table-wrap">
 <table>

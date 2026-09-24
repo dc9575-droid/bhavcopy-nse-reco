@@ -65,6 +65,36 @@ def test_past_picks_page_lists_generated_recommendations(client):
     assert b"RELIANCE" in resp.data
 
 
+def test_past_picks_daily_results_counts_link_to_filtered_all_picks(client):
+    client.get("/recommendations")
+    resp = client.get("/past-picks")
+    body = resp.data.decode()
+    # entry_date is the fixture's last seeded day, so nothing has any later
+    # price to resolve against yet -- every pick is still_open, giving the
+    # Daily Results table a clickable "Still Open" count to link from.
+    assert "horizon=short_term" in body
+    assert "status=still_open" in body
+
+
+def test_past_picks_page_filters_by_status_query_param(client):
+    client.get("/recommendations")
+    resp = client.get("/past-picks?horizon=short_term&status=still_open")
+    assert resp.status_code == 200
+    body = resp.data.decode()
+    assert "Showing" in body
+    assert "Clear filter" in body
+    # Every short-term pick is still_open in this fixture (see above), so
+    # both symbols should appear in the filtered list.
+    assert "RELIANCE" in body
+    assert "TCS" in body
+
+
+def test_past_picks_page_shows_no_filter_banner_without_query_params(client):
+    client.get("/recommendations")
+    resp = client.get("/past-picks")
+    assert b"Clear filter" not in resp.data
+
+
 def test_download_route_redirects_to_index(client, monkeypatch):
     def always_no_data(d, session=None):
         raise downloader.NoDataForDate("no data for test")

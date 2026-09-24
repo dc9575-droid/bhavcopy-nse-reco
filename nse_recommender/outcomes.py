@@ -91,3 +91,21 @@ def list_past_picks(conn):
         outcome = compute_outcome(conn, rec)
         picks.append({**rec, **outcome})
     return picks
+
+
+def filter_picks(picks, horizon=None, period=None, status=None):
+    """Narrow an already-computed list_past_picks() result to the picks
+    behind one Daily Results cell -- e.g. clicking a "Stop-Loss Hit" count
+    for a given horizon/period should show exactly those picks.
+    """
+    result = picks
+    if horizon:
+        result = [p for p in result if p["horizon"] == horizon]
+    if period:
+        result = [
+            p for p in result
+            if period_start(p["horizon"], date.fromisoformat(p["generated_date"])).isoformat() == period
+        ]
+    if status:
+        result = [p for p in result if p["status"] == status]
+    return result
