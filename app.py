@@ -13,7 +13,7 @@ from datetime import date
 
 from flask import Flask, current_app, flash, redirect, render_template, request, url_for
 
-from nse_recommender import calendar_nse, channel, db, downloader, outcomes, recommender, status, streaks, universe
+from nse_recommender import calendar_nse, chart, channel, db, downloader, outcomes, recommender, status, streaks, universe
 
 
 def create_app(db_path=None, symbols=None):
@@ -92,6 +92,7 @@ def create_app(db_path=None, symbols=None):
                 "has_data": streak["current_price"] is not None,
                 "streak": streak,
                 "channel": chan,
+                "chart_svg": chart.channel_svg(chan),
                 "horizons": horizons,
             }
         return render_template("stock.html", symbol=symbol, result=result)

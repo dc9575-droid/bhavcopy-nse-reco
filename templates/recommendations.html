@@ -20,7 +20,20 @@
 <td>{{ pick.stop_loss }}</td>
 <td>{{ pick.reason }}</td>
 <td><span class="badge badge-{{ 'buy' if pick.streak.direction == 'up' else 'sell' if pick.streak.direction == 'down' else 'still_open' }}">{{ pick.streak.label }}</span></td>
-<td>{{ pick.channel.label if pick.channel.available else "—" }}</td>
+<td>
+{% if pick.channel.available %}
+<button type="button" class="badge badge-still_open" onclick="document.getElementById('drawer-{{ horizon_key }}-buy-{{ loop.index0 }}').showModal()">{{ pick.channel.label }}</button>
+<dialog id="drawer-{{ horizon_key }}-buy-{{ loop.index0 }}" class="drawer">
+  <button type="button" class="drawer-close" onclick="this.closest('dialog').close()">Close &times;</button>
+  <h2>{{ pick.symbol }} channel</h2>
+  {{ pick.chart_svg | safe }}
+  <p class="muted">Support {{ pick.channel.support }} &middot; Resistance {{ pick.channel.resistance }} &middot; Centerline {{ pick.channel.centerline }}</p>
+  <p class="muted">Currently at {{ pick.channel.position_pct }}% of this 20-day channel.</p>
+</dialog>
+{% else %}
+&mdash;
+{% endif %}
+</td>
 </tr>
 {% endfor %}
 </tbody>
@@ -39,7 +52,20 @@
 <td>{{ pick.stop_loss }}</td>
 <td>{{ pick.reason }}</td>
 <td><span class="badge badge-{{ 'buy' if pick.streak.direction == 'up' else 'sell' if pick.streak.direction == 'down' else 'still_open' }}">{{ pick.streak.label }}</span></td>
-<td>{{ pick.channel.label if pick.channel.available else "—" }}</td>
+<td>
+{% if pick.channel.available %}
+<button type="button" class="badge badge-still_open" onclick="document.getElementById('drawer-{{ horizon_key }}-sell-{{ loop.index0 }}').showModal()">{{ pick.channel.label }}</button>
+<dialog id="drawer-{{ horizon_key }}-sell-{{ loop.index0 }}" class="drawer">
+  <button type="button" class="drawer-close" onclick="this.closest('dialog').close()">Close &times;</button>
+  <h2>{{ pick.symbol }} channel</h2>
+  {{ pick.chart_svg | safe }}
+  <p class="muted">Support {{ pick.channel.support }} &middot; Resistance {{ pick.channel.resistance }} &middot; Centerline {{ pick.channel.centerline }}</p>
+  <p class="muted">Currently at {{ pick.channel.position_pct }}% of this 20-day channel.</p>
+</dialog>
+{% else %}
+&mdash;
+{% endif %}
+</td>
 </tr>
 {% endfor %}
 </tbody>

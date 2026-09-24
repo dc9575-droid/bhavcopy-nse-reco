@@ -40,6 +40,14 @@ def test_compute_channel_fits_a_regression_line_and_bands():
     assert result["current_price"] == 120.0
     assert result["position_pct"] == 74.2
     assert result["label"] == "74% of 117.11-121.0"
+    assert round(result["resid_std"], 4) == 0.9734
+    assert len(result["points"]) == 20
+    assert result["points"][0]["date"] == date(2026, 9, 1).isoformat()
+    assert result["points"][0]["close"] == 100
+    assert round(result["points"][0]["fitted"], 2) == 100.04
+    assert result["points"][-1]["date"] == date(2026, 9, 20).isoformat()
+    assert result["points"][-1]["close"] == 120
+    assert round(result["points"][-1]["fitted"], 2) == 119.06
 
 
 def test_compute_channel_perfectly_linear_data_has_zero_width_band():

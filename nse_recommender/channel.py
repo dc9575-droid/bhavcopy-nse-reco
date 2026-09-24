@@ -18,6 +18,7 @@ def compute_channel(conn, symbol, lookback_days=LOOKBACK_DAYS):
         return {"available": False, "have": len(rows), "need": lookback_days}
 
     window = rows[-lookback_days:]
+    dates = [r["date"] for r in window]
     closes = [r["close"] for r in window]
     n = len(closes)
     xs = list(range(n))
@@ -52,4 +53,9 @@ def compute_channel(conn, symbol, lookback_days=LOOKBACK_DAYS):
         "current_price": round(current_price, 2),
         "position_pct": round(position_pct, 1),
         "label": f"{round(position_pct)}% of {support}-{resistance}",
+        "resid_std": resid_std,
+        "points": [
+            {"date": d, "close": c, "fitted": f}
+            for d, c, f in zip(dates, closes, fitted)
+        ],
     }

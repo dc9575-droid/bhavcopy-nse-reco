@@ -16,7 +16,14 @@
 </p>
 <p>Channel:
 {% if result.channel.available %}
-<span class="badge badge-still_open">{{ result.channel.label }}</span>
+<button type="button" class="badge badge-still_open" onclick="document.getElementById('drawer-stock-channel').showModal()">{{ result.channel.label }}</button>
+<dialog id="drawer-stock-channel" class="drawer">
+  <button type="button" class="drawer-close" onclick="this.closest('dialog').close()">Close &times;</button>
+  <h2>{{ symbol }} channel</h2>
+  {{ result.chart_svg | safe }}
+  <p class="muted">Support {{ result.channel.support }} &middot; Resistance {{ result.channel.resistance }} &middot; Centerline {{ result.channel.centerline }}</p>
+  <p class="muted">Currently at {{ result.channel.position_pct }}% of this 20-day channel.</p>
+</dialog>
 {% else %}
 <span class="muted">Need {{ result.channel.need }} trading days of data, have {{ result.channel.have }}</span>
 {% endif %}

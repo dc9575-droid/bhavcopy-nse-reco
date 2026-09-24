@@ -78,6 +78,13 @@ def test_generate_recommendations_picks_include_streak_info(seeded_conn):
     assert top_sell_streak["length"] == 10
 
 
+def test_generate_recommendations_picks_include_chart_svg_key(seeded_conn):
+    # The fixture only has 11 days of history, short of the channel's 20-day
+    # requirement, so chart_svg must degrade to None rather than crash.
+    result = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term")
+    assert result["buy"][0]["chart_svg"] is None
+
+
 def test_generate_recommendations_sell_pick_target_below_entry(seeded_conn):
     result = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term")
     top_sell = result["sell"][0]

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from nse_recommender import channel, streaks
+from nse_recommender import chart, channel, streaks
 
 HORIZONS = {
     "short_term": {"label": "Short-term (3 trading days)", "lookback_days": 3, "target_pct": 0.05, "stop_loss_pct": 0.025},
@@ -59,6 +59,8 @@ def _build_picks(conn, rows, side, config):
             "streak": streaks.current_streak(conn, row["symbol"]),
             "channel": channel.compute_channel(conn, row["symbol"]),
         })
+    for pick in picks:
+        pick["chart_svg"] = chart.channel_svg(pick["channel"])
     return picks
 
 
