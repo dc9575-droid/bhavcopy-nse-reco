@@ -101,8 +101,9 @@ def get_or_fetch_daily_mood(conn, day, fetch_fn=None):
     """day: a date. Returns the cached market_mood row for day.isoformat()
     if present; otherwise fetches, scores, stores (INSERT OR IGNORE, same
     idempotency pattern as downloads_log), and returns the fresh result.
-    Any exception while fetching is swallowed here -- never propagates to
-    the caller -- and treated as the empty-headlines case.
+    Any exception during the entire fetch-score-store pipeline is swallowed
+    here -- never propagates to the caller -- and returns the neutral/"Unavailable"
+    result instead.
     """
     date_str = day.isoformat()
     row = conn.execute("SELECT * FROM market_mood WHERE date = ?", (date_str,)).fetchone()
@@ -115,13 +116,20 @@ def get_or_fetch_daily_mood(conn, day, fetch_fn=None):
         }
     try:
         headlines = fetch_headlines(fetch_fn=fetch_fn)
+        mood = score_mood(headlines)
+        conn.execute(
+            """INSERT OR IGNORE INTO market_mood (date, score, label, headlines_json, fetched_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (date_str, mood["score"], mood["label"], json.dumps(headlines), datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+        return {"date": date_str, "score": mood["score"], "label": mood["label"], "headlines": headlines}
     except Exception:
-        headlines = []
-    mood = score_mood(headlines)
-    conn.execute(
-        """INSERT OR IGNORE INTO market_mood (date, score, label, headlines_json, fetched_at)
-           VALUES (?, ?, ?, ?, ?)""",
-        (date_str, mood["score"], mood["label"], json.dumps(headlines), datetime.utcnow().isoformat()),
-    )
-    conn.commit()
-    return {"date": date_str, "score": mood["score"], "label": mood["label"], "headlines": headlines}
+        # On any exception (fetch failure, score failure, DB write failure),
+        # return neutral/"Unavailable" result to prevent propagation to caller
+        return {
+            "date": date_str,
+            "score": 0.0,
+            "label": "Unavailable",
+            "headlines": [],
+        }

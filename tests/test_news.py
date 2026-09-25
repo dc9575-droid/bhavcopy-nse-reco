@@ -168,3 +168,35 @@ def test_get_or_fetch_daily_mood_degrades_to_neutral_when_all_feeds_fail():
     assert mood["score"] == 0.0
     assert mood["label"] == "Unavailable"
     assert mood["headlines"] == []
+
+
+def test_get_or_fetch_daily_mood_degrades_to_neutral_when_database_fails():
+    """Verifies that any exception during fetch-score-store (including DB failures)
+    is swallowed and returns neutral/"Unavailable" result instead of propagating."""
+    conn = get_connection(":memory:")
+    init_db(conn)
+
+    def fake_fetch(url):
+        return SAMPLE_FEED_XML
+
+    # Wrapper connection that raises on commit, simulating DB failure
+    class FailingConnection:
+        def __init__(self, real_conn):
+            self.real_conn = real_conn
+
+        def execute(self, sql, params=None):
+            return self.real_conn.execute(sql, params) if params else self.real_conn.execute(sql)
+
+        def commit(self):
+            raise RuntimeError("simulated database error")
+
+        def fetchone(self):
+            return self.real_conn.fetchone()
+
+    # Even though conn.commit() raises, get_or_fetch_daily_mood must swallow the
+    # exception and return the neutral/"Unavailable" result
+    failing_conn = FailingConnection(conn)
+    mood = news.get_or_fetch_daily_mood(failing_conn, date(2026, 9, 25), fetch_fn=fake_fetch)
+    assert mood["score"] == 0.0
+    assert mood["label"] == "Unavailable"
+    assert mood["headlines"] == []
