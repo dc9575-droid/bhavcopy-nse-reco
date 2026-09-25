@@ -61,3 +61,59 @@ def test_score_mood_does_not_match_lexicon_words_as_substrings():
     result = news.score_mood(headlines)
     assert result["score"] == 0.0
     assert result["label"] == "Neutral"
+
+
+SAMPLE_FEED_XML = """<?xml version="1.0"?>
+<rss version="2.0"><channel>
+<title>Sample Feed</title>
+<item><title>Sensex rallies 500 points on strong FII inflows</title></item>
+<item><title>Rupee steady against dollar in early trade</title></item>
+</channel></rss>"""
+
+MALFORMED_XML = "<rss><channel><item><title>Unclosed"
+
+
+def test_fetch_headlines_parses_titles_from_injected_fetch_fn():
+    def fake_fetch(url):
+        return SAMPLE_FEED_XML
+
+    headlines = news.fetch_headlines(fetch_fn=fake_fetch)
+    titles = [h["title"] for h in headlines]
+    assert "Sensex rallies 500 points on strong FII inflows" in titles
+    assert "Rupee steady against dollar in early trade" in titles
+    # One entry per feed in RSS_FEEDS, since every feed returns the same
+    # sample XML from this fake -- confirms all configured feeds are hit.
+    assert len(headlines) == 2 * len(news.RSS_FEEDS)
+    assert all(h["category"] in ("national", "international") for h in headlines)
+
+
+def test_fetch_headlines_skips_a_feed_that_raises_and_keeps_the_rest():
+    calls = {"n": 0}
+
+    def flaky_fetch(url):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise news.FeedUnavailable("simulated network error")
+        return SAMPLE_FEED_XML
+
+    headlines = news.fetch_headlines(fetch_fn=flaky_fetch)
+    # First feed failed, the rest succeeded -- some headlines still returned.
+    assert len(headlines) == 2 * (len(news.RSS_FEEDS) - 1)
+
+
+def test_fetch_headlines_skips_malformed_xml_without_raising():
+    def fake_fetch(url):
+        return MALFORMED_XML
+
+    headlines = news.fetch_headlines(fetch_fn=fake_fetch)
+    assert headlines == []
+
+
+def test_fetch_headlines_with_no_fetch_fn_uses_real_fetcher_and_still_degrades_safely(monkeypatch):
+    # Simulates "no network available" by making the real fetcher fail --
+    # fetch_headlines must swallow it, not raise.
+    def always_fail(url):
+        raise news.FeedUnavailable("no network in this test")
+
+    monkeypatch.setattr(news, "_fetch_feed_xml", always_fail)
+    assert news.fetch_headlines() == []
