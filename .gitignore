@@ -3,3 +3,4 @@ __pycache__/
 .venv/
 nse.db
 test_nse.db
+.superpowers/
