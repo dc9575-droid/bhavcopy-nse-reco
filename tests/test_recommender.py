@@ -148,3 +148,32 @@ def test_generate_and_save_all_is_idempotent_on_repeat_calls(seeded_conn):
     count = seeded_conn.execute("SELECT COUNT(*) AS c FROM recommendations").fetchone()["c"]
     # 2 horizons (short_term, mid_term) ok x 2 sides x 5 picks each = 20 rows total.
     assert count == 20
+
+
+def test_levels_buy_with_zero_mood_matches_unadjusted_baseline():
+    target, stop_loss = recommender._levels(100, "buy", 0.05, 0.025, mood_score=0.0)
+    assert target == 105.0
+    assert stop_loss == 97.5
+
+
+def test_levels_buy_with_aligned_bullish_mood_widens_stop_loss():
+    target, stop_loss = recommender._levels(100, "buy", 0.05, 0.025, mood_score=1.0)
+    assert target == 105.0  # target never changes
+    assert stop_loss == 97.0  # 0.025 * (1 + 0.2*1.0) = 0.03 -> 100*(1-0.03)
+
+
+def test_levels_sell_with_bullish_mood_tightens_stop_loss():
+    # Bullish mood disagrees with a sell pick (alignment = -mood_score = -1.0).
+    target, stop_loss = recommender._levels(100, "sell", 0.05, 0.025, mood_score=1.0)
+    assert target == 95.0  # target never changes
+    assert stop_loss == 102.0  # 0.025 * (1 + 0.2*-1.0) = 0.02 -> 100*(1+0.02)
+
+
+def test_generate_recommendations_threads_mood_score_into_buy_stop_loss(seeded_conn):
+    baseline = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term", mood_score=0.0)
+    bullish = recommender.generate_recommendations(seeded_conn, SYMBOLS, "short_term", mood_score=1.0)
+    entry = bullish["buy"][0]["entry"]
+    assert baseline["buy"][0]["stop_loss"] == round(entry * 0.975, 2)
+    assert bullish["buy"][0]["stop_loss"] == round(entry * 0.97, 2)
+    # Targets never move regardless of mood.
+    assert baseline["buy"][0]["target"] == bullish["buy"][0]["target"]

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from nse_recommender import chart, channel, streaks
+from nse_recommender import chart, channel, news, streaks
 
 HORIZONS = {
     "short_term": {"label": "Short-term (3 trading days)", "lookback_days": 3, "target_pct": 0.05, "stop_loss_pct": 0.025},
@@ -38,16 +38,20 @@ def compute_returns(conn, symbols, lookback_days):
     return joined.reset_index().sort_values("pct_return", ascending=False).reset_index(drop=True)
 
 
-def _levels(entry, side, target_pct, stop_loss_pct):
+def _levels(entry, side, target_pct, stop_loss_pct, mood_score=0.0):
+    alignment = mood_score if side == "buy" else -mood_score
+    adjusted_stop_loss_pct = stop_loss_pct * (1 + news.MOOD_ADJUSTMENT * alignment)
     if side == "buy":
-        return entry * (1 + target_pct), entry * (1 - stop_loss_pct)
-    return entry * (1 - target_pct), entry * (1 + stop_loss_pct)
+        return entry * (1 + target_pct), entry * (1 - adjusted_stop_loss_pct)
+    return entry * (1 - target_pct), entry * (1 + adjusted_stop_loss_pct)
 
 
-def _build_picks(conn, rows, side, config):
+def _build_picks(conn, rows, side, config, mood_score=0.0):
     picks = []
     for _, row in rows.iterrows():
-        target, stop_loss = _levels(row["entry"], side, config["target_pct"], config["stop_loss_pct"])
+        target, stop_loss = _levels(
+            row["entry"], side, config["target_pct"], config["stop_loss_pct"], mood_score
+        )
         pct = row["pct_return"] * 100
         picks.append({
             "symbol": row["symbol"],
@@ -65,7 +69,7 @@ def _build_picks(conn, rows, side, config):
     return picks
 
 
-def generate_recommendations(conn, symbols, horizon_key):
+def generate_recommendations(conn, symbols, horizon_key, mood_score=0.0):
     config = HORIZONS[horizon_key]
     try:
         ranked = compute_returns(conn, symbols, config["lookback_days"])
@@ -76,8 +80,8 @@ def generate_recommendations(conn, symbols, horizon_key):
     return {
         "status": "ok",
         "label": config["label"],
-        "buy": _build_picks(conn, top5, "buy", config),
-        "sell": _build_picks(conn, bottom5, "sell", config),
+        "buy": _build_picks(conn, top5, "buy", config, mood_score),
+        "sell": _build_picks(conn, bottom5, "sell", config, mood_score),
     }
 
 
