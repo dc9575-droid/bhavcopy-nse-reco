@@ -1,3 +1,5 @@
+from datetime import date
+
 import pandas as pd
 
 from nse_recommender import chart, channel, news, streaks
@@ -131,9 +133,11 @@ def symbol_momentum(conn, symbol, horizon_key):
 
 
 def generate_and_save_all(conn, symbols, generated_date):
+    day = date.fromisoformat(generated_date)
+    mood = news.get_or_fetch_daily_mood(conn, day)
     results = {}
     for horizon_key in HORIZONS:
-        result = generate_recommendations(conn, symbols, horizon_key)
+        result = generate_recommendations(conn, symbols, horizon_key, mood_score=mood["score"])
         save_recommendations(conn, horizon_key, generated_date, result)
         results[horizon_key] = result
-    return results
+    return results, mood

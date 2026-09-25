@@ -55,12 +55,14 @@ def create_app(db_path=None, symbols=None):
         conn = db.get_connection(current_app.config["DB_PATH"])
         try:
             generated_date = date.today().isoformat()
-            results = recommender.generate_and_save_all(
+            results, mood = recommender.generate_and_save_all(
                 conn, current_app.config["SYMBOLS"], generated_date
             )
         finally:
             conn.close()
-        return render_template("recommendations.html", results=results, generated_date=generated_date)
+        return render_template(
+            "recommendations.html", results=results, generated_date=generated_date, mood=mood
+        )
 
     @app.route("/past-picks")
     def past_picks():

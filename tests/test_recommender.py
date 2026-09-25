@@ -177,3 +177,27 @@ def test_generate_recommendations_threads_mood_score_into_buy_stop_loss(seeded_c
     assert bullish["buy"][0]["stop_loss"] == round(entry * 0.97, 2)
     # Targets never move regardless of mood.
     assert baseline["buy"][0]["target"] == bullish["buy"][0]["target"]
+
+
+def test_generate_and_save_all_returns_mood_alongside_results(seeded_conn):
+    results, mood = recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
+    assert results["short_term"]["status"] == "ok"
+    # No market_mood row was pre-inserted and the test suite blocks real
+    # network by default (see conftest.py), so this must degrade to neutral.
+    assert mood["score"] == 0.0
+    assert mood["label"] == "Unavailable"
+
+
+def test_generate_and_save_all_applies_a_cached_mood_score_to_stop_loss(seeded_conn):
+    seeded_conn.execute(
+        "INSERT INTO market_mood (date, score, label, headlines_json, fetched_at) VALUES (?, ?, ?, ?, ?)",
+        ("2024-01-11", 1.0, "Bullish", "[]", "2024-01-11T00:00:00"),
+    )
+    seeded_conn.commit()
+
+    results, mood = recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
+
+    assert mood["score"] == 1.0
+    assert mood["label"] == "Bullish"
+    top_buy = results["short_term"]["buy"][0]
+    assert top_buy["stop_loss"] == round(top_buy["entry"] * 0.97, 2)  # widened, mood-aligned buy
