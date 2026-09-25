@@ -143,3 +143,13 @@ def test_download_route_flashes_summary_message(client, monkeypatch):
     assert resp.status_code == 200
     body = resp.data.decode()
     assert "0 downloaded, 1 no data, 0 failed" in body
+
+
+def test_recommendations_page_shows_market_mood_banner(client):
+    resp = client.get("/recommendations")
+    body = resp.data.decode()
+    assert "Market Mood" in body
+    # No feeds are reachable in tests (conftest.py blocks real network and
+    # no market_mood row was pre-seeded), so this must show the neutral
+    # degraded state, not crash or silently omit the banner.
+    assert "Unavailable" in body

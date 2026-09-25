@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Recommendations <span class="muted">({{ generated_date }})</span></h1>
+<div class="card">
+  <p><strong>Market Mood: {{ mood.label }}</strong> <span class="muted">(score {{ mood.score }})</span></p>
+  {% if mood.headlines %}
+  <ul class="muted">
+    {% for h in mood.headlines[:5] %}<li>{{ h.title }} <span class="muted">({{ h.source }})</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
 {% for horizon_key, result in results.items() %}
 <h2>{{ result.label }}</h2>
 <div class="card">
