@@ -51,3 +51,13 @@ def test_score_mood_matches_hyphenated_negative_words():
     result = news.score_mood(headlines)
     # "selloff" (negative) + "gains" (positive) -> net 0 over 1 headline
     assert result["score"] == 0.0
+
+
+def test_score_mood_does_not_match_lexicon_words_as_substrings():
+    # "boombox" contains "boom" as a substring but is not the word "boom" --
+    # whole-word matching must not count it. Naive substring matching would
+    # incorrectly score this as positive.
+    headlines = [{"title": "New boombox launches at retail stores", "source": "BBC", "category": "international"}]
+    result = news.score_mood(headlines)
+    assert result["score"] == 0.0
+    assert result["label"] == "Neutral"
