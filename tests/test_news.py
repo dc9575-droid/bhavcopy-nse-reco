@@ -1,4 +1,8 @@
+import json
+from datetime import date
+
 from nse_recommender import news
+from nse_recommender.db import get_connection, init_db
 
 
 def test_score_mood_with_no_headlines_is_unavailable():
@@ -117,3 +121,50 @@ def test_fetch_headlines_with_no_fetch_fn_uses_real_fetcher_and_still_degrades_s
 
     monkeypatch.setattr(news, "_fetch_feed_xml", always_fail)
     assert news.fetch_headlines() == []
+
+
+def test_get_or_fetch_daily_mood_computes_and_stores_a_new_day():
+    conn = get_connection(":memory:")
+    init_db(conn)
+
+    def fake_fetch(url):
+        return SAMPLE_FEED_XML
+
+    mood = news.get_or_fetch_daily_mood(conn, date(2026, 9, 25), fetch_fn=fake_fetch)
+    assert mood["date"] == "2026-09-25"
+    assert mood["label"] in ("Bullish", "Neutral", "Bearish")
+    assert len(mood["headlines"]) == 2 * len(news.RSS_FEEDS)
+
+    row = conn.execute("SELECT * FROM market_mood WHERE date = ?", ("2026-09-25",)).fetchone()
+    assert row is not None
+    assert json.loads(row["headlines_json"]) == mood["headlines"]
+
+
+def test_get_or_fetch_daily_mood_returns_cached_result_without_refetching():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    calls = {"n": 0}
+
+    def counting_fetch(url):
+        calls["n"] += 1
+        return SAMPLE_FEED_XML
+
+    first = news.get_or_fetch_daily_mood(conn, date(2026, 9, 25), fetch_fn=counting_fetch)
+    calls_after_first = calls["n"]
+    second = news.get_or_fetch_daily_mood(conn, date(2026, 9, 25), fetch_fn=counting_fetch)
+
+    assert second == first
+    assert calls["n"] == calls_after_first  # no new fetch calls on the second lookup
+
+
+def test_get_or_fetch_daily_mood_degrades_to_neutral_when_all_feeds_fail():
+    conn = get_connection(":memory:")
+    init_db(conn)
+
+    def always_fail(url):
+        raise news.FeedUnavailable("simulated outage")
+
+    mood = news.get_or_fetch_daily_mood(conn, date(2026, 9, 25), fetch_fn=always_fail)
+    assert mood["score"] == 0.0
+    assert mood["label"] == "Unavailable"
+    assert mood["headlines"] == []
