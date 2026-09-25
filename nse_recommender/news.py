@@ -1,9 +1,12 @@
 import json
+import logging
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 POSITIVE_WORDS = {
     "rally", "surge", "gain", "gains", "bullish", "upgrade",
@@ -19,7 +22,7 @@ MOOD_ADJUSTMENT = 0.2  # max +/-20% change to stop-loss width
 RSS_FEEDS = [
     ("national", "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"),
     ("national", "https://www.business-standard.com/rss/markets-106.rss"),
-    ("international", "http://feeds.bbci.co.uk/news/world/rss.xml"),
+    ("international", "https://feeds.bbci.co.uk/news/world/rss.xml"),
 ]
 
 
@@ -55,7 +58,7 @@ def score_mood(headlines):
         words = _words(h["title"])
         positive_hits += len(words & POSITIVE_WORDS)
         negative_hits += len(words & NEGATIVE_WORDS)
-    raw_score = (positive_hits - negative_hits) / len(headlines)
+    raw_score = (positive_hits - negative_hits) / max(positive_hits + negative_hits, 1)
     score = max(-1.0, min(1.0, raw_score))
     if score >= 0.3:
         label = "Bullish"
@@ -92,7 +95,8 @@ def fetch_headlines(fetch_fn=None):
         try:
             xml_text = fetch(url)
             headlines.extend(_parse_feed_xml(xml_text, category, url))
-        except Exception:
+        except Exception as exc:
+            logger.warning("failed to fetch/parse feed %s: %s", url, exc)
             continue
     return headlines
 
@@ -106,15 +110,15 @@ def get_or_fetch_daily_mood(conn, day, fetch_fn=None):
     result instead.
     """
     date_str = day.isoformat()
-    row = conn.execute("SELECT * FROM market_mood WHERE date = ?", (date_str,)).fetchone()
-    if row is not None:
-        return {
-            "date": row["date"],
-            "score": row["score"],
-            "label": row["label"],
-            "headlines": json.loads(row["headlines_json"]),
-        }
     try:
+        row = conn.execute("SELECT * FROM market_mood WHERE date = ?", (date_str,)).fetchone()
+        if row is not None:
+            return {
+                "date": row["date"],
+                "score": row["score"],
+                "label": row["label"],
+                "headlines": json.loads(row["headlines_json"]),
+            }
         headlines = fetch_headlines(fetch_fn=fetch_fn)
         mood = score_mood(headlines)
         conn.execute(
@@ -125,8 +129,10 @@ def get_or_fetch_daily_mood(conn, day, fetch_fn=None):
         conn.commit()
         return {"date": date_str, "score": mood["score"], "label": mood["label"], "headlines": headlines}
     except Exception:
-        # On any exception (fetch failure, score failure, DB write failure),
-        # return neutral/"Unavailable" result to prevent propagation to caller
+        # On any exception (cache read failure, fetch failure, score failure,
+        # or DB write failure), return neutral/"Unavailable" result to
+        # prevent propagation to caller
+        logger.warning("market mood pipeline degraded to Unavailable for %s", date_str)
         return {
             "date": date_str,
             "score": 0.0,

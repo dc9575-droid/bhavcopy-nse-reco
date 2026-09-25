@@ -67,6 +67,42 @@ def test_score_mood_does_not_match_lexicon_words_as_substrings():
     assert result["label"] == "Neutral"
 
 
+def test_score_mood_denominator_excludes_non_matching_headlines_for_a_decisive_signal():
+    """Regression test for the dilution fix: the denominator must count only
+    headlines that matched the lexicon, not every fetched headline. In
+    production ~100 headlines are fetched per day (one of the three feeds is
+    general world news) but usually only a couple ever contain a lexicon
+    word. Dividing by the total headline count buries any real signal near
+    zero and makes the +-0.3 Bullish/Bearish thresholds practically
+    unreachable. This mirrors a realistic "20 neutral headlines + 2 clearly
+    negative ones" shape.
+    """
+    neutral_headlines = [
+        {"title": f"Markets trade range-bound in session number {i}", "source": "ET", "category": "national"}
+        for i in range(20)
+    ]
+    negative_headlines = [
+        {"title": "Markets crash amid weak earnings outlook", "source": "ET", "category": "national"},
+        {"title": "Stocks plunge on renewed global weakness", "source": "BS", "category": "national"},
+    ]
+    headlines = neutral_headlines + negative_headlines  # 22 headlines total
+    result = news.score_mood(headlines)
+
+    # Hand computation:
+    # positive_hits = 0, negative_hits = 2 ("crash", "plunge") -- 22 headlines total.
+    # OLD formula (diluted by ALL headlines): (0 - 2) / 22 = -0.0909... -> rounds
+    # to -0.091, which stays inside the +-0.3 "Neutral" band -- the real signal
+    # would have been invisible under the old formula.
+    old_formula_score = round((0 - 2) / len(headlines), 3)
+    assert old_formula_score == -0.091
+
+    # NEW formula (diluted only by matched headlines): (0 - 2) / max(0 + 2, 1) = -1.0,
+    # clamped to -1.0 -- clearly crosses the -0.3 threshold into "Bearish".
+    assert result["score"] == -1.0
+    assert result["label"] == "Bearish"
+    assert abs(result["score"]) > abs(old_formula_score)
+
+
 SAMPLE_FEED_XML = """<?xml version="1.0"?>
 <rss version="2.0"><channel>
 <title>Sample Feed</title>
@@ -200,3 +236,32 @@ def test_get_or_fetch_daily_mood_degrades_to_neutral_when_database_fails():
     assert mood["score"] == 0.0
     assert mood["label"] == "Unavailable"
     assert mood["headlines"] == []
+
+
+def test_get_or_fetch_daily_mood_degrades_to_neutral_when_cache_read_fails():
+    """Verifies that a DB error on the cache-lookup SELECT itself (not just
+    the later write) is also swallowed and returns the neutral/"Unavailable"
+    result instead of propagating -- the try block must wrap the cache read
+    too, not just the fetch-score-store sequence."""
+
+    calls = {"n": 0}
+
+    def fetch_fn_that_should_never_run(url):
+        # If the SELECT's exception isn't caught before we reach the fetch
+        # step, this would be called -- it shouldn't be.
+        calls["n"] += 1
+        return SAMPLE_FEED_XML
+
+    # Fake connection that raises as soon as the cache-lookup SELECT runs.
+    class FailingSelectConnection:
+        def execute(self, sql, params=None):
+            raise RuntimeError("simulated database error on cache read")
+
+    failing_conn = FailingSelectConnection()
+    mood = news.get_or_fetch_daily_mood(
+        failing_conn, date(2026, 9, 25), fetch_fn=fetch_fn_that_should_never_run
+    )
+    assert mood["score"] == 0.0
+    assert mood["label"] == "Unavailable"
+    assert mood["headlines"] == []
+    assert calls["n"] == 0  # failed before ever reaching fetch_headlines
