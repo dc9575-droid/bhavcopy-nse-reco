@@ -34,6 +34,14 @@ CREATE TABLE IF NOT EXISTS recommendations (
     stop_loss REAL NOT NULL,
     UNIQUE (symbol, horizon, side, generated_date)
 );
+
+CREATE TABLE IF NOT EXISTS market_mood (
+    date TEXT PRIMARY KEY,
+    score REAL NOT NULL,
+    label TEXT NOT NULL,
+    headlines_json TEXT NOT NULL,
+    fetched_at TEXT NOT NULL
+);
 """
 
 
