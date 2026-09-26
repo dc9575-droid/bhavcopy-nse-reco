@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -186,6 +186,42 @@ def test_download_route_flashes_summary_message(client, monkeypatch):
     assert resp.status_code == 200
     body = resp.data.decode()
     assert "0 downloaded, 1 no data, 0 failed" in body
+
+
+@pytest.fixture
+def client_with_channel_data(tmp_path):
+    # The plain `client` fixture only seeds 5 days of history, far short of
+    # the channel's 20-day requirement, so its channel drawer (and the
+    # watchlist button living inside it) never renders. This fixture seeds
+    # enough history for the channel to actually be available.
+    db_path = tmp_path / "test_nse_channel.db"
+    symbols = ["RELIANCE"]
+    app = create_app(db_path=str(db_path), symbols=symbols)
+
+    from nse_recommender.db import get_connection
+    conn = get_connection(str(db_path))
+    base = date(2026, 8, 1)
+    for i in range(25):
+        d = base + timedelta(days=i)
+        close = 100 + i
+        conn.execute(
+            "INSERT INTO bhavcopy_prices (symbol, date, open, high, low, close, volume) VALUES (?,?,?,?,?,?,?)",
+            ("RELIANCE", d.isoformat(), close, close, close, close, 1000),
+        )
+    conn.commit()
+    conn.close()
+    return app.test_client()
+
+
+def test_recommendations_page_shows_add_to_watchlist_in_the_channel_drawer(client_with_channel_data):
+    resp = client_with_channel_data.get("/recommendations")
+    assert b"Add to Watchlist" in resp.data
+
+
+def test_recommendations_page_shows_remove_for_an_already_watched_symbol(client_with_channel_data):
+    client_with_channel_data.post("/watchlist/add", data={"symbol": "RELIANCE"})
+    resp = client_with_channel_data.get("/recommendations")
+    assert b"Remove from Watchlist" in resp.data
 
 
 def test_recommendations_page_shows_market_mood_banner(client):

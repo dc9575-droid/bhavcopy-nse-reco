@@ -60,8 +60,13 @@ def create_app(db_path=None, symbols=None):
             results, mood = recommender.generate_and_save_all(
                 conn, current_app.config["SYMBOLS"], generated_date
             )
+            watched = set(watchlist.list_watched(conn))
         finally:
             conn.close()
+        for result in results.values():
+            if result["status"] == "ok":
+                for pick in result["buy"] + result["sell"]:
+                    pick["is_watched"] = pick["symbol"] in watched
         return render_template(
             "recommendations.html", results=results, generated_date=generated_date, mood=mood
         )

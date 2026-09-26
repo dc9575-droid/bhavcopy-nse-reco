@@ -34,6 +34,21 @@
 <dialog id="drawer-{{ horizon_key }}-buy-{{ loop.index0 }}" class="drawer">
   <button type="button" class="drawer-close" onclick="this.closest('dialog').close()">Close &times;</button>
   <h2>{{ pick.symbol }} channel</h2>
+  <p>
+  {% if pick.is_watched %}
+  <form method="post" action="{{ url_for('watchlist_remove') }}">
+  <input type="hidden" name="symbol" value="{{ pick.symbol }}">
+  <input type="hidden" name="next" value="{{ url_for('recommendations') }}">
+  <button type="submit" class="badge badge-sell">Remove from Watchlist</button>
+  </form>
+  {% else %}
+  <form method="post" action="{{ url_for('watchlist_add') }}">
+  <input type="hidden" name="symbol" value="{{ pick.symbol }}">
+  <input type="hidden" name="next" value="{{ url_for('recommendations') }}">
+  <button type="submit" class="badge badge-buy">Add to Watchlist</button>
+  </form>
+  {% endif %}
+  </p>
   {{ pick.chart_svg | safe }}
   <p class="muted">Support {{ pick.channel.support }} &middot; Resistance {{ pick.channel.resistance }} &middot; Centerline {{ pick.channel.centerline }}</p>
   <p class="muted">Currently at {{ pick.channel.position_pct }}% of this 20-day channel.</p>
@@ -70,6 +85,21 @@
 <dialog id="drawer-{{ horizon_key }}-sell-{{ loop.index0 }}" class="drawer">
   <button type="button" class="drawer-close" onclick="this.closest('dialog').close()">Close &times;</button>
   <h2>{{ pick.symbol }} channel</h2>
+  <p>
+  {% if pick.is_watched %}
+  <form method="post" action="{{ url_for('watchlist_remove') }}">
+  <input type="hidden" name="symbol" value="{{ pick.symbol }}">
+  <input type="hidden" name="next" value="{{ url_for('recommendations') }}">
+  <button type="submit" class="badge badge-sell">Remove from Watchlist</button>
+  </form>
+  {% else %}
+  <form method="post" action="{{ url_for('watchlist_add') }}">
+  <input type="hidden" name="symbol" value="{{ pick.symbol }}">
+  <input type="hidden" name="next" value="{{ url_for('recommendations') }}">
+  <button type="submit" class="badge badge-buy">Add to Watchlist</button>
+  </form>
+  {% endif %}
+  </p>
   {{ pick.chart_svg | safe }}
   <p class="muted">Support {{ pick.channel.support }} &middot; Resistance {{ pick.channel.resistance }} &middot; Centerline {{ pick.channel.centerline }}</p>
   <p class="muted">Currently at {{ pick.channel.position_pct }}% of this 20-day channel.</p>
