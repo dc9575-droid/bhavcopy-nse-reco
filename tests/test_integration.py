@@ -127,6 +127,49 @@ def test_stock_search_for_symbol_outside_the_universe_shows_a_message(client):
     assert b"not in the bundled Nifty 500 list" in resp.data
 
 
+def test_watchlist_page_is_empty_by_default(client):
+    resp = client.get("/watchlist")
+    assert resp.status_code == 200
+    assert b"Nothing watched yet" in resp.data
+
+
+def test_stock_page_shows_add_to_watchlist_button_for_an_unwatched_symbol(client):
+    resp = client.get("/stock?symbol=reliance")
+    assert resp.status_code == 200
+    assert b"Add to Watchlist" in resp.data
+
+
+def test_adding_to_watchlist_makes_it_appear_on_the_watchlist_page(client):
+    client.post("/watchlist/add", data={"symbol": "reliance"}, follow_redirects=True)
+    resp = client.get("/watchlist")
+    body = resp.data.decode()
+    assert "RELIANCE" in body
+    assert "Nothing watched yet" not in body
+
+
+def test_adding_to_watchlist_redirects_back_to_the_stock_page_and_shows_remove_button(client):
+    resp = client.post(
+        "/watchlist/add",
+        data={"symbol": "RELIANCE", "next": "/stock?symbol=RELIANCE"},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    assert b"Remove from Watchlist" in resp.data
+
+
+def test_removing_from_watchlist_takes_it_off_the_watchlist_page(client):
+    client.post("/watchlist/add", data={"symbol": "RELIANCE"})
+    client.post("/watchlist/remove", data={"symbol": "RELIANCE"})
+    resp = client.get("/watchlist")
+    assert b"Nothing watched yet" in resp.data
+
+
+def test_watchlist_add_ignores_a_symbol_outside_the_universe(client):
+    client.post("/watchlist/add", data={"symbol": "NOTINUNIVERSE"})
+    resp = client.get("/watchlist")
+    assert b"Nothing watched yet" in resp.data
+
+
 def test_download_route_flashes_summary_message(client, monkeypatch):
     from nse_recommender import calendar_nse
 

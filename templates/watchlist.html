@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Watchlist</h1>
+{% if rows %}
+<div class="card">
+<div class="table-wrap">
+<table>
+<thead><tr><th>Symbol</th><th>Current Price</th><th>Streak</th><th>Channel</th><th></th><th></th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.symbol }}</td>
+<td>{{ row.streak.current_price if row.streak.current_price is not none else "—" }}</td>
+<td><span class="badge badge-{{ 'buy' if row.streak.direction == 'up' else 'sell' if row.streak.direction == 'down' else 'still_open' }}">{{ row.streak.label }}</span></td>
+<td>
+{% if row.channel.available %}
+<button type="button" class="badge badge-still_open" onclick="document.getElementById('drawer-watchlist-{{ loop.index0 }}').showModal()">{{ row.channel.label }}</button>
+<dialog id="drawer-watchlist-{{ loop.index0 }}" class="drawer">
+  <button type="button" class="drawer-close" onclick="this.closest('dialog').close()">Close &times;</button>
+  <h2>{{ row.symbol }} channel</h2>
+  {{ row.chart_svg | safe }}
+  <p class="muted">Support {{ row.channel.support }} &middot; Resistance {{ row.channel.resistance }} &middot; Centerline {{ row.channel.centerline }}</p>
+  <p class="muted">Currently at {{ row.channel.position_pct }}% of this 20-day channel.</p>
+  <h3>Tomorrow's projected channel</h3>
+  <p class="muted">If this trend line continues (not a price prediction &mdash; the actual close could land anywhere, same as today's can break outside the current band):</p>
+  {{ row.next_chart_svg | safe }}
+  <p class="muted">Projected support {{ row.channel.next_support }} &middot; resistance {{ row.channel.next_resistance }} &middot; centerline {{ row.channel.next_centerline }}</p>
+</dialog>
+{% else %}
+&mdash;
+{% endif %}
+</td>
+<td><a href="{{ url_for('stock', symbol=row.symbol) }}">Details</a></td>
+<td>
+<form method="post" action="{{ url_for('watchlist_remove') }}">
+<input type="hidden" name="symbol" value="{{ row.symbol }}">
+<input type="hidden" name="next" value="{{ url_for('watchlist_page') }}">
+<button type="submit" class="badge badge-sell">Remove</button>
+</form>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{% else %}
+<div class="card"><p class="muted">Nothing watched yet &mdash; search for a symbol on the Stock Search page and click &ldquo;Add to Watchlist&rdquo;.</p></div>
+{% endif %}
+{% endblock %}

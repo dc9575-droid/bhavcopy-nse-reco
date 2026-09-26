@@ -13,7 +13,9 @@ from datetime import date
 
 from flask import Flask, current_app, flash, redirect, render_template, request, url_for
 
-from nse_recommender import calendar_nse, chart, channel, db, downloader, outcomes, recommender, status, streaks, universe
+from nse_recommender import (
+    calendar_nse, chart, channel, db, downloader, outcomes, recommender, status, streaks, universe, watchlist,
+)
 
 
 def create_app(db_path=None, symbols=None):
@@ -105,11 +107,13 @@ def create_app(db_path=None, symbols=None):
                     horizon_key: recommender.symbol_momentum(conn, symbol, horizon_key)
                     for horizon_key in recommender.HORIZONS
                 }
+                is_watched = watchlist.is_watched(conn, symbol)
             finally:
                 conn.close()
             result = {
                 "in_universe": symbol in current_app.config["SYMBOLS"],
                 "has_data": streak["current_price"] is not None,
+                "is_watched": is_watched,
                 "streak": streak,
                 "channel": chan,
                 "chart_svg": chart.channel_svg(chan),
@@ -117,6 +121,48 @@ def create_app(db_path=None, symbols=None):
                 "horizons": horizons,
             }
         return render_template("stock.html", symbol=symbol, result=result)
+
+    @app.route("/watchlist")
+    def watchlist_page():
+        conn = db.get_connection(current_app.config["DB_PATH"])
+        try:
+            rows = []
+            for symbol in watchlist.list_watched(conn):
+                streak = streaks.current_streak(conn, symbol)
+                chan = channel.compute_channel(conn, symbol)
+                rows.append({
+                    "symbol": symbol,
+                    "streak": streak,
+                    "channel": chan,
+                    "chart_svg": chart.channel_svg(chan),
+                    "next_chart_svg": chart.next_day_projection_svg(chan),
+                })
+        finally:
+            conn.close()
+        return render_template("watchlist.html", rows=rows)
+
+    @app.route("/watchlist/add", methods=["POST"])
+    def watchlist_add():
+        symbol = request.form.get("symbol", "").strip().upper()
+        next_url = request.form.get("next") or url_for("watchlist_page")
+        if symbol in current_app.config["SYMBOLS"]:
+            conn = db.get_connection(current_app.config["DB_PATH"])
+            try:
+                watchlist.add(conn, symbol)
+            finally:
+                conn.close()
+        return redirect(next_url)
+
+    @app.route("/watchlist/remove", methods=["POST"])
+    def watchlist_remove():
+        symbol = request.form.get("symbol", "").strip().upper()
+        next_url = request.form.get("next") or url_for("watchlist_page")
+        conn = db.get_connection(current_app.config["DB_PATH"])
+        try:
+            watchlist.remove(conn, symbol)
+        finally:
+            conn.close()
+        return redirect(next_url)
 
     return app
 

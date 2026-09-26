@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS market_mood (
     headlines_json TEXT NOT NULL,
     fetched_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS watchlist (
+    symbol TEXT PRIMARY KEY
+);
 """
 
 

@@ -317,6 +317,7 @@
     <a href="{{ url_for('index') }}">Downloader</a>
     <a href="{{ url_for('recommendations') }}">Recommendations</a>
     <a href="{{ url_for('past_picks') }}">Past Picks</a>
+    <a href="{{ url_for('watchlist_page') }}">Watchlist</a>
     <form class="search-form" method="get" action="{{ url_for('stock') }}">
       <input type="text" name="symbol" placeholder="Search symbol&hellip;" value="{{ request.args.get('symbol', '') }}">
       <button type="submit">Search</button>
