@@ -139,6 +139,19 @@ def test_save_recommendations_persists_entry_date(seeded_conn):
     assert row["entry_date"] == DATES[-1].isoformat()
 
 
+def test_save_recommendations_persists_entry_condition_signals(seeded_conn):
+    recommender.generate_and_save_all(seeded_conn, SYMBOLS, generated_date="2024-01-11")
+    row = seeded_conn.execute(
+        "SELECT * FROM recommendations WHERE symbol = 'SYM11' AND horizon = 'short_term' AND side = 'buy'"
+    ).fetchone()
+    # SYM11's close rises every day across all 11 seeded dates (see the
+    # streak-info test above): a 10-day up streak.
+    assert row["streak_direction"] == "up"
+    assert row["streak_length"] == 10
+    # Only 11 days are seeded, short of the channel's 20-day requirement.
+    assert row["channel_position_pct"] is None
+
+
 def test_generate_and_save_all_is_idempotent_on_repeat_calls(seeded_conn):
     # Regression test for C1: calling generate_and_save_all twice with the
     # same generated_date must not duplicate rows (INSERT OR IGNORE + the

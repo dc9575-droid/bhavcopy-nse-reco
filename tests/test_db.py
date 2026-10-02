@@ -79,3 +79,42 @@ def test_watchlist_symbol_is_the_primary_key():
     conn.commit()
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute("INSERT INTO watchlist (symbol) VALUES (?)", ("RELIANCE",))
+
+
+def test_recommendations_table_has_entry_condition_columns():
+    conn = get_connection(":memory:")
+    init_db(conn)
+    conn.execute(
+        """INSERT INTO recommendations
+           (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss,
+            streak_direction, streak_length, channel_position_pct)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        ("RELIANCE", "short_term", "buy", "2026-01-01", "2026-01-01", 100, 105, 97.5, "up", 5, 92.3),
+    )
+    row = conn.execute("SELECT * FROM recommendations WHERE symbol='RELIANCE'").fetchone()
+    assert row["streak_direction"] == "up"
+    assert row["streak_length"] == 5
+    assert row["channel_position_pct"] == 92.3
+
+
+def test_init_db_adds_entry_condition_columns_to_a_pre_existing_table_without_raising():
+    # Simulates a real deployed DB created before this migration: a bare
+    # recommendations table with none of the new columns yet.
+    conn = get_connection(":memory:")
+    conn.execute("""CREATE TABLE recommendations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        horizon TEXT NOT NULL,
+        side TEXT NOT NULL CHECK (side IN ('buy', 'sell')),
+        generated_date TEXT NOT NULL,
+        entry_date TEXT NOT NULL,
+        entry REAL NOT NULL,
+        target REAL NOT NULL,
+        stop_loss REAL NOT NULL,
+        UNIQUE (symbol, horizon, side, generated_date)
+    )""")
+    conn.commit()
+    init_db(conn)  # must not raise, and must add the new columns
+    init_db(conn)  # calling twice must also not raise (idempotent migration)
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(recommendations)").fetchall()}
+    assert {"streak_direction", "streak_length", "channel_position_pct"} <= columns

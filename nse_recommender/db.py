@@ -55,6 +55,25 @@ def get_connection(db_path=None):
     return conn
 
 
+# SQLite has no "ALTER TABLE ... ADD COLUMN IF NOT EXISTS", so adding a
+# column to a table that may already exist (and already have real rows, on
+# a live deployment) has to check first -- otherwise a second init_db() call
+# raises "duplicate column name".
+_RECOMMENDATIONS_COLUMNS = {
+    "streak_direction": "TEXT",
+    "streak_length": "INTEGER",
+    "channel_position_pct": "REAL",
+}
+
+
+def _ensure_columns(conn, table, columns):
+    existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    for name, coltype in columns.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {coltype}")
+
+
 def init_db(conn):
     conn.executescript(SCHEMA)
+    _ensure_columns(conn, "recommendations", _RECOMMENDATIONS_COLUMNS)
     conn.commit()

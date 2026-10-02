@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Performance</h1>
+<p class="muted">Win rate by entry condition, based on resolved past picks only &mdash; target hit or stop-loss hit. Still-open picks aren't counted yet since they haven't resolved.</p>
+
+{% for title, rows, empty_message in [
+  ("By Horizon &amp; Side", segments.by_horizon_side, "No resolved picks yet."),
+  ("By Streak Direction at Entry", segments.by_streak_direction, "Not enough data yet &mdash; this only covers picks generated after entry-condition tracking began."),
+  ("By Channel Position at Entry", segments.by_channel_position, "Not enough data yet &mdash; this only covers picks generated after entry-condition tracking began."),
+] %}
+<h2>{{ title|safe }}</h2>
+<div class="card">
+{% if rows %}
+<div class="table-wrap">
+<table>
+<thead><tr><th>Segment</th><th>Target Hit</th><th>Stop-Loss Hit</th><th>Total</th><th>Win Rate</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.label }}</td>
+<td><span class="badge badge-target_hit">{{ row.target_hit }}</span></td>
+<td><span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span></td>
+<td>{{ row.total }}</td>
+<td>{{ row.win_rate ~ "%" if row.win_rate is not none else "—" }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">{{ empty_message|safe }}</p>
+{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

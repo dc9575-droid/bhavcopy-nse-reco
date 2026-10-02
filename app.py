@@ -14,7 +14,8 @@ from datetime import date
 from flask import Flask, current_app, flash, redirect, render_template, request, url_for
 
 from nse_recommender import (
-    calendar_nse, chart, channel, db, downloader, outcomes, recommender, status, streaks, universe, watchlist,
+    calendar_nse, chart, channel, db, downloader, outcomes, performance, recommender, status, streaks, universe,
+    watchlist,
 )
 
 
@@ -168,6 +169,15 @@ def create_app(db_path=None, symbols=None):
         finally:
             conn.close()
         return redirect(next_url)
+
+    @app.route("/performance")
+    def performance_page():
+        conn = db.get_connection(current_app.config["DB_PATH"])
+        try:
+            segments = performance.win_rate_by_segment(conn)
+        finally:
+            conn.close()
+        return render_template("performance.html", segments=segments)
 
     return app
 

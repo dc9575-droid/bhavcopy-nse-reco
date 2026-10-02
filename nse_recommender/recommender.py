@@ -92,13 +92,18 @@ def save_recommendations(conn, horizon_key, generated_date, result):
         return
     for side in ("buy", "sell"):
         for pick in result[side]:
+            channel_position_pct = (
+                pick["channel"]["position_pct"] if pick["channel"]["available"] else None
+            )
             conn.execute(
                 """INSERT OR IGNORE INTO recommendations
-                   (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                   (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss,
+                    streak_direction, streak_length, channel_position_pct)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     pick["symbol"], horizon_key, side, generated_date, pick["entry_date"],
                     pick["entry"], pick["target"], pick["stop_loss"],
+                    pick["streak"]["direction"], pick["streak"]["length"], channel_position_pct,
                 ),
             )
     conn.commit()

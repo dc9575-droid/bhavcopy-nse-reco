@@ -224,6 +224,12 @@ def test_recommendations_page_shows_remove_for_an_already_watched_symbol(client_
     assert b"Remove from Watchlist" in resp.data
 
 
+def test_performance_page_loads(client):
+    resp = client.get("/performance")
+    assert resp.status_code == 200
+    assert b"By Horizon" in resp.data
+
+
 def test_recommendations_page_shows_market_mood_banner(client):
     resp = client.get("/recommendations")
     body = resp.data.decode()
