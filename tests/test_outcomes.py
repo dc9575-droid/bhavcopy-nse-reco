@@ -217,10 +217,14 @@ def test_daily_results_sorts_periods_most_recent_first():
 
 
 _SAMPLE_PICKS = [
-    {"symbol": "AAA", "horizon": "short_term", "generated_date": "2026-09-23", "status": "target_hit"},
-    {"symbol": "BBB", "horizon": "short_term", "generated_date": "2026-09-23", "status": "stop_loss_hit"},
-    {"symbol": "CCC", "horizon": "short_term", "generated_date": "2026-09-22", "status": "stop_loss_hit"},
-    {"symbol": "DDD", "horizon": "mid_term", "generated_date": "2026-09-23", "status": "still_open"},
+    {"symbol": "AAA", "horizon": "short_term", "generated_date": "2026-09-23", "status": "target_hit",
+     "side": "buy", "streak_direction": "up", "channel_position_pct": 90.0},
+    {"symbol": "BBB", "horizon": "short_term", "generated_date": "2026-09-23", "status": "stop_loss_hit",
+     "side": "buy", "streak_direction": "down", "channel_position_pct": 60.0},
+    {"symbol": "CCC", "horizon": "short_term", "generated_date": "2026-09-22", "status": "stop_loss_hit",
+     "side": "sell", "streak_direction": "up", "channel_position_pct": None},
+    {"symbol": "DDD", "horizon": "mid_term", "generated_date": "2026-09-23", "status": "still_open",
+     "side": "sell", "streak_direction": None, "channel_position_pct": 115.0},
 ]
 
 
@@ -246,3 +250,37 @@ def test_filter_picks_by_horizon_period_and_status_combined():
         _SAMPLE_PICKS, horizon="short_term", period="2026-09-23", status="stop_loss_hit"
     )
     assert [p["symbol"] for p in result] == ["BBB"]
+
+
+def test_filter_picks_by_side_only():
+    result = outcomes.filter_picks(_SAMPLE_PICKS, side="sell")
+    assert [p["symbol"] for p in result] == ["CCC", "DDD"]
+
+
+def test_filter_picks_by_streak_direction_only():
+    result = outcomes.filter_picks(_SAMPLE_PICKS, streak_direction="up")
+    assert [p["symbol"] for p in result] == ["AAA", "CCC"]
+
+
+def test_filter_picks_by_channel_position_bucket():
+    # AAA (90.0 -> within channel), BBB (60.0 -> below support),
+    # DDD (115.0 -> broken above); CCC has no channel data (None), excluded.
+    result = outcomes.filter_picks(_SAMPLE_PICKS, channel_position="Within channel (80-100%)")
+    assert [p["symbol"] for p in result] == ["AAA"]
+
+
+def test_channel_bucket_classifies_below_support():
+    assert outcomes.channel_bucket(60.0) == "Below support (<80%)"
+
+
+def test_channel_bucket_classifies_within_channel():
+    assert outcomes.channel_bucket(80.0) == "Within channel (80-100%)"
+    assert outcomes.channel_bucket(100.0) == "Within channel (80-100%)"
+
+
+def test_channel_bucket_classifies_broken_above():
+    assert outcomes.channel_bucket(115.0) == "Broken above (>100%)"
+
+
+def test_channel_bucket_returns_none_for_missing_data():
+    assert outcomes.channel_bucket(None) is None

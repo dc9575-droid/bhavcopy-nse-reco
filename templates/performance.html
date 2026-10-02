@@ -1,26 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
+{% set horizon_labels = {"short_term": "Short-term", "mid_term": "Mid-term", "long_term": "Long-term"} %}
 <h1>Performance</h1>
-<p class="muted">Win rate by entry condition, based on resolved past picks only &mdash; target hit or stop-loss hit. Still-open picks aren't counted yet since they haven't resolved.</p>
+<p class="muted">Win rate by entry condition, based on resolved past picks only &mdash; target hit or stop-loss hit. Still-open picks aren't counted yet since they haven't resolved. Click any count to see the exact picks behind it.</p>
 
-{% for title, rows, empty_message in [
-  ("By Horizon &amp; Side", segments.by_horizon_side, "No resolved picks yet."),
-  ("By Streak Direction at Entry", segments.by_streak_direction, "Not enough data yet &mdash; this only covers picks generated after entry-condition tracking began."),
-  ("By Channel Position at Entry", segments.by_channel_position, "Not enough data yet &mdash; this only covers picks generated after entry-condition tracking began."),
-] %}
-<h2>{{ title|safe }}</h2>
+<h2>By Horizon &amp; Side</h2>
 <div class="card">
-{% if rows %}
+{% if segments.by_horizon_side %}
+{% for horizon_key in ["short_term", "mid_term", "long_term"] %}
+{% if narratives.get(horizon_key) %}
+<p class="muted"><strong>{{ horizon_labels[horizon_key] }}:</strong> {{ narratives[horizon_key] }}</p>
+{% endif %}
+{% endfor %}
 <div class="table-wrap">
 <table>
 <thead><tr><th>Segment</th><th>Target Hit</th><th>Stop-Loss Hit</th><th>Total</th><th>Win Rate</th></tr></thead>
 <tbody>
-{% for row in rows %}
+{% for row in segments.by_horizon_side %}
 <tr>
 <td>{{ row.label }}</td>
-<td><span class="badge badge-target_hit">{{ row.target_hit }}</span></td>
-<td><span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span></td>
-<td>{{ row.total }}</td>
+<td>
+{% if row.target_hit > 0 %}
+<a class="badge badge-target_hit" href="{{ url_for('past_picks', horizon=row.horizon, side=row.side, status='target_hit') }}#all-picks">{{ row.target_hit }}</a>
+{% else %}
+<span class="badge badge-target_hit">{{ row.target_hit }}</span>
+{% endif %}
+</td>
+<td>
+{% if row.stop_loss_hit > 0 %}
+<a class="badge badge-stop_loss_hit" href="{{ url_for('past_picks', horizon=row.horizon, side=row.side, status='stop_loss_hit') }}#all-picks">{{ row.stop_loss_hit }}</a>
+{% else %}
+<span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span>
+{% endif %}
+</td>
+<td><a href="{{ url_for('past_picks', horizon=row.horizon, side=row.side) }}#all-picks">{{ row.total }}</a></td>
 <td>{{ row.win_rate ~ "%" if row.win_rate is not none else "—" }}</td>
 </tr>
 {% endfor %}
@@ -28,8 +41,79 @@
 </table>
 </div>
 {% else %}
-<p class="muted">{{ empty_message|safe }}</p>
+<p class="muted">No resolved picks yet.</p>
 {% endif %}
 </div>
+
+<h2>By Streak Direction at Entry</h2>
+<div class="card">
+{% if segments.by_streak_direction %}
+<div class="table-wrap">
+<table>
+<thead><tr><th>Segment</th><th>Target Hit</th><th>Stop-Loss Hit</th><th>Total</th><th>Win Rate</th></tr></thead>
+<tbody>
+{% for row in segments.by_streak_direction %}
+<tr>
+<td>{{ row.label }}</td>
+<td>
+{% if row.target_hit > 0 %}
+<a class="badge badge-target_hit" href="{{ url_for('past_picks', streak_direction=row.label, status='target_hit') }}#all-picks">{{ row.target_hit }}</a>
+{% else %}
+<span class="badge badge-target_hit">{{ row.target_hit }}</span>
+{% endif %}
+</td>
+<td>
+{% if row.stop_loss_hit > 0 %}
+<a class="badge badge-stop_loss_hit" href="{{ url_for('past_picks', streak_direction=row.label, status='stop_loss_hit') }}#all-picks">{{ row.stop_loss_hit }}</a>
+{% else %}
+<span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span>
+{% endif %}
+</td>
+<td><a href="{{ url_for('past_picks', streak_direction=row.label) }}#all-picks">{{ row.total }}</a></td>
+<td>{{ row.win_rate ~ "%" if row.win_rate is not none else "—" }}</td>
+</tr>
 {% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">Not enough data yet &mdash; this only covers picks generated after entry-condition tracking began.</p>
+{% endif %}
+</div>
+
+<h2>By Channel Position at Entry</h2>
+<div class="card">
+{% if segments.by_channel_position %}
+<div class="table-wrap">
+<table>
+<thead><tr><th>Segment</th><th>Target Hit</th><th>Stop-Loss Hit</th><th>Total</th><th>Win Rate</th></tr></thead>
+<tbody>
+{% for row in segments.by_channel_position %}
+<tr>
+<td>{{ row.label }}</td>
+<td>
+{% if row.target_hit > 0 %}
+<a class="badge badge-target_hit" href="{{ url_for('past_picks', channel_position=row.label, status='target_hit') }}#all-picks">{{ row.target_hit }}</a>
+{% else %}
+<span class="badge badge-target_hit">{{ row.target_hit }}</span>
+{% endif %}
+</td>
+<td>
+{% if row.stop_loss_hit > 0 %}
+<a class="badge badge-stop_loss_hit" href="{{ url_for('past_picks', channel_position=row.label, status='stop_loss_hit') }}#all-picks">{{ row.stop_loss_hit }}</a>
+{% else %}
+<span class="badge badge-stop_loss_hit">{{ row.stop_loss_hit }}</span>
+{% endif %}
+</td>
+<td><a href="{{ url_for('past_picks', channel_position=row.label) }}#all-picks">{{ row.total }}</a></td>
+<td>{{ row.win_rate ~ "%" if row.win_rate is not none else "—" }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">Not enough data yet &mdash; this only covers picks generated after entry-condition tracking began.</p>
+{% endif %}
+</div>
 {% endblock %}

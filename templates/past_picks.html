@@ -67,6 +67,9 @@
 {%- if filter_horizon %} &middot; horizon: <strong>{{ filter_horizon.replace("_", " ") }}</strong>{% endif -%}
 {%- if filter_period %} &middot; period: <strong>{{ filter_period }}</strong>{% endif -%}
 {%- if filter_status %} &middot; status: <strong>{{ filter_status.replace("_", " ") }}</strong>{% endif -%}
+{%- if filter_side %} &middot; side: <strong>{{ filter_side }}</strong>{% endif -%}
+{%- if filter_streak_direction %} &middot; streak: <strong>{{ filter_streak_direction }}</strong>{% endif -%}
+{%- if filter_channel_position %} &middot; channel: <strong>{{ filter_channel_position }}</strong>{% endif -%}
 </span>
 <a href="{{ url_for('past_picks') }}">Clear filter</a>
 </div>

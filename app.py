@@ -62,14 +62,17 @@ def create_app(db_path=None, symbols=None):
                 conn, current_app.config["SYMBOLS"], generated_date
             )
             watched = set(watchlist.list_watched(conn))
+            segments = performance.win_rate_by_segment(conn)
         finally:
             conn.close()
         for result in results.values():
             if result["status"] == "ok":
                 for pick in result["buy"] + result["sell"]:
                     pick["is_watched"] = pick["symbol"] in watched
+        narratives = performance.horizon_narratives(segments["by_horizon_side"])
         return render_template(
-            "recommendations.html", results=results, generated_date=generated_date, mood=mood
+            "recommendations.html", results=results, generated_date=generated_date, mood=mood,
+            narratives=narratives,
         )
 
     @app.route("/past-picks")
@@ -84,9 +87,17 @@ def create_app(db_path=None, symbols=None):
         filter_horizon = request.args.get("horizon") or None
         filter_period = request.args.get("period") or None
         filter_status = request.args.get("status") or None
-        filter_active = bool(filter_horizon or filter_period or filter_status)
+        filter_side = request.args.get("side") or None
+        filter_streak_direction = request.args.get("streak_direction") or None
+        filter_channel_position = request.args.get("channel_position") or None
+        filter_active = bool(
+            filter_horizon or filter_period or filter_status
+            or filter_side or filter_streak_direction or filter_channel_position
+        )
         filtered_picks = outcomes.filter_picks(
-            picks, horizon=filter_horizon, period=filter_period, status=filter_status
+            picks, horizon=filter_horizon, period=filter_period, status=filter_status,
+            side=filter_side, streak_direction=filter_streak_direction,
+            channel_position=filter_channel_position,
         )
 
         return render_template(
@@ -98,6 +109,9 @@ def create_app(db_path=None, symbols=None):
             filter_horizon=filter_horizon,
             filter_period=filter_period,
             filter_status=filter_status,
+            filter_side=filter_side,
+            filter_streak_direction=filter_streak_direction,
+            filter_channel_position=filter_channel_position,
         )
 
     @app.route("/stock")
@@ -177,7 +191,8 @@ def create_app(db_path=None, symbols=None):
             segments = performance.win_rate_by_segment(conn)
         finally:
             conn.close()
-        return render_template("performance.html", segments=segments)
+        narratives = performance.horizon_narratives(segments["by_horizon_side"])
+        return render_template("performance.html", segments=segments, narratives=narratives)
 
     return app
 

@@ -93,10 +93,26 @@ def list_past_picks(conn):
     return picks
 
 
-def filter_picks(picks, horizon=None, period=None, status=None):
+def channel_bucket(pct):
+    """Buckets a channel position % at entry into a plain-language label.
+    None (no channel data at entry) stays None -- callers treat that as
+    "exclude from this breakdown/filter", not its own bucket.
+    """
+    if pct is None:
+        return None
+    if pct < 80:
+        return "Below support (<80%)"
+    if pct <= 100:
+        return "Within channel (80-100%)"
+    return "Broken above (>100%)"
+
+
+def filter_picks(picks, horizon=None, period=None, status=None, side=None,
+                  streak_direction=None, channel_position=None):
     """Narrow an already-computed list_past_picks() result to the picks
-    behind one Daily Results cell -- e.g. clicking a "Stop-Loss Hit" count
-    for a given horizon/period should show exactly those picks.
+    behind one Daily Results or Performance cell -- e.g. clicking a
+    "Stop-Loss Hit" count for a given horizon/period, or a Performance
+    segment's count, should show exactly those picks.
     """
     result = picks
     if horizon:
@@ -108,4 +124,10 @@ def filter_picks(picks, horizon=None, period=None, status=None):
         ]
     if status:
         result = [p for p in result if p["status"] == status]
+    if side:
+        result = [p for p in result if p["side"] == side]
+    if streak_direction:
+        result = [p for p in result if p["streak_direction"] == streak_direction]
+    if channel_position:
+        result = [p for p in result if channel_bucket(p["channel_position_pct"]) == channel_position]
     return result

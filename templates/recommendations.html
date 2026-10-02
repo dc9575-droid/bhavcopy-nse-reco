@@ -11,6 +11,9 @@
 </div>
 {% for horizon_key, result in results.items() %}
 <h2>{{ result.label }}</h2>
+{% if narratives.get(horizon_key) %}
+<p class="muted">{{ narratives[horizon_key] }}</p>
+{% endif %}
 <div class="card">
 {% if result.status == "insufficient_data" %}
 <p class="muted">Need {{ result.need }} trading days of data, have {{ result.have }} &mdash; download more history first.</p>

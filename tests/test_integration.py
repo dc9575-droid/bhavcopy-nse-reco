@@ -230,6 +230,63 @@ def test_performance_page_loads(client):
     assert b"By Horizon" in resp.data
 
 
+def test_performance_narrative_and_linked_counts_lead_back_to_past_picks(tmp_path):
+    # A known, deterministic pattern seeded directly: one short-term buy
+    # pick that lost (stop-loss), one short-term sell pick that won
+    # (target) -- so the narrative must say SELL beats BUY, and each count
+    # must link to exactly the picks behind it.
+    db_path = tmp_path / "test_nse_narrative.db"
+    app = create_app(db_path=str(db_path), symbols=["RELIANCE", "TCS"])
+
+    from nse_recommender.db import get_connection
+    conn = get_connection(str(db_path))
+    base = date(2026, 1, 1)
+    for symbol, d, close in [
+        ("RELIANCE", base, 100), ("RELIANCE", base + timedelta(days=1), 94),
+        ("TCS", base, 200), ("TCS", base + timedelta(days=1), 190),
+    ]:
+        conn.execute(
+            "INSERT INTO bhavcopy_prices (symbol, date, open, high, low, close, volume) VALUES (?,?,?,?,?,?,?)",
+            (symbol, d.isoformat(), close, close, close, close, 1000),
+        )
+    conn.execute(
+        """INSERT INTO recommendations
+           (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss)
+           VALUES ('RELIANCE', 'short_term', 'buy', ?, ?, 100, 105, 95)""",
+        (base.isoformat(), base.isoformat()),
+    )
+    conn.execute(
+        """INSERT INTO recommendations
+           (symbol, horizon, side, generated_date, entry_date, entry, target, stop_loss)
+           VALUES ('TCS', 'short_term', 'sell', ?, ?, 200, 190, 210)""",
+        (base.isoformat(), base.isoformat()),
+    )
+    conn.commit()
+    conn.close()
+
+    client = app.test_client()
+
+    perf_body = client.get("/performance").data.decode()
+    assert "SELL calls win 100%" in perf_body
+    assert "0% for BUY" in perf_body
+    assert "horizon=short_term" in perf_body
+    assert "side=buy" in perf_body and "side=sell" in perf_body
+    assert "status=stop_loss_hit" in perf_body and "status=target_hit" in perf_body
+
+    # The narrative must also appear on today's Recommendations page, even
+    # though today's own generation has insufficient history (only 2 days
+    # seeded) -- the narrative is sourced from historical picks, not today's.
+    rec_body = client.get("/recommendations").data.decode()
+    assert "SELL calls win 100%" in rec_body
+
+    # Clicking through from Performance must show exactly the matching pick.
+    filtered_body = client.get(
+        "/past-picks?horizon=short_term&side=buy&status=stop_loss_hit"
+    ).data.decode()
+    assert "RELIANCE" in filtered_body
+    assert "TCS" not in filtered_body
+
+
 def test_recommendations_page_shows_market_mood_banner(client):
     resp = client.get("/recommendations")
     body = resp.data.decode()
